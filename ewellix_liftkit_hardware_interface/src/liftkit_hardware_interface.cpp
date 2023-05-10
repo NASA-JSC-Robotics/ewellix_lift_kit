@@ -1,0 +1,171 @@
+#include "liftkit_hardware_interface/liftkit_hardware_interface.hpp"
+
+#include <algorithm>
+#include <mutex>
+#include <string>
+#include <iomanip>
+#include <sstream>
+#include <math.h>
+#include <boost/shared_ptr.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/system/system_error.hpp>
+
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/macros.hpp"
+
+const double Kp = 500;
+const double velocity_limit = 5000.0;
+
+using namespace std;
+
+namespace liftkit_hardware_interface
+{
+    using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
+    CallbackReturn LiftkitHardwareInterface::on_init(const hardware_interface::HardwareInfo &info_)
+    {
+        if (hardware_interface::ActuatorInterface::on_init(info_) != CallbackReturn::SUCCESS)
+        {
+            return CallbackReturn::ERROR;
+        }
+
+        hw_states_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
+        hw_states_velocities_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
+        hw_states_robot_ready_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
+        hw_commands_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
+        // signal(SIGINT, signal_callback_handler);
+        system_info = info_;
+        // ip_addr = system_info.hardware_parameters["ip_addr"];
+        // port = stoi(system_info.hardware_parameters["port"]);
+
+        return CallbackReturn::SUCCESS;
+    }
+
+    CallbackReturn LiftkitHardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
+    {
+        port = "/dev/ttyUSB0";
+        baudrate = 38400;
+        RCLCPP_INFO(rclcpp::get_logger("RailEHardwareInterface"), "Successfully configure!");
+        return CallbackReturn::SUCCESS;
+    }
+
+    CallbackReturn LiftkitHardwareInterface::on_cleanup(const rclcpp_lifecycle::State & /*previous_state*/)
+    {
+        srl_.stopRs232Com();    //Com stopped
+        srl_.run_= false;       // stop RC thread loop
+        com_thread_.join();
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully cleanup!");
+        return CallbackReturn::SUCCESS;
+    }
+
+    vector<hardware_interface::StateInterface> LiftkitHardwareInterface::export_state_interfaces()
+    {
+        vector<hardware_interface::StateInterface> state_interfaces;
+
+        // export sensor state interface
+        for (uint i = 0; i < info_.joints.size(); ++i)
+        {
+            state_interfaces.emplace_back(hardware_interface::StateInterface(
+                info_.joints[i].name, info_.joints[i].state_interfaces[0].name, &hw_states_positions_[i]));
+            state_interfaces.emplace_back(hardware_interface::StateInterface(
+                info_.joints[i].name, info_.joints[i].state_interfaces[1].name, &hw_states_velocities_[i]));
+            state_interfaces.emplace_back(hardware_interface::StateInterface(
+                info_.joints[i].name, info_.joints[i].state_interfaces[2].name, &hw_states_robot_ready_[i]));
+        }
+
+        return state_interfaces;
+    }
+
+    vector<hardware_interface::CommandInterface> LiftkitHardwareInterface::export_command_interfaces()
+    {
+        vector<hardware_interface::CommandInterface> command_interfaces;
+
+        // export command state interface
+        for (uint i = 0; i < info_.joints.size(); ++i)
+        {
+            command_interfaces.emplace_back(hardware_interface::CommandInterface(
+                info_.joints[i].name, info_.joints[i].state_interfaces[0].name, &hw_commands_positions_[i]));
+        }
+
+        return command_interfaces;
+    }
+
+    CallbackReturn LiftkitHardwareInterface::on_activate(const rclcpp_lifecycle::State & /*previous_state*/)
+    {
+        for (unsigned int i = 0; i < hw_states_positions_.size(); ++i)
+        {
+            hw_states_positions_[i] = 0;
+            hw_states_velocities_[i] = 0;
+            hw_states_robot_ready_[i] = 0;
+        }
+        for (unsigned int i = 0; i < hw_commands_positions_.size(); ++i)
+        {
+            hw_commands_positions_[i] = 0;
+        }
+
+        // // Trying to instantiate the driver
+        try
+        {
+            if(srl_.startSerialCom(port,baudrate))
+            {
+                com_thread_ = thread(&SerialComTlt::comLoop,&srl_); //  RC thread
+                if(srl_.startRs232Com()) 
+                {        // Com started
+                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully connected!");
+                } else {
+                    RCLCPP_FATAL(
+                        rclcpp::get_logger("LiftkitHardwareInterface"),
+                        "Is the Liftkit USB Connected?");
+                    return CallbackReturn::ERROR;                
+                }
+            }
+        }
+        catch (boost::system::system_error &e)
+        {
+            RCLCPP_FATAL(
+                rclcpp::get_logger("LiftkitHardwareInterface"),
+                "TCP error: '%s'", e.what());
+            return CallbackReturn::ERROR;
+        }
+        RCLCPP_DEBUG(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully activated!");
+        return CallbackReturn::SUCCESS;
+    }
+
+    CallbackReturn LiftkitHardwareInterface::on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
+    {
+        srl_.stopRs232Com();    //Com stopped
+        srl_.run_= false;       // stop RC thread loop
+        com_thread_.join();
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully deactivated!");
+        return CallbackReturn::SUCCESS;
+    }
+
+    hardware_interface::return_type LiftkitHardwareInterface::read(const rclcpp::Time &time, const rclcpp::Duration &period)
+    {
+        previous_position_ = hw_states_positions_[0];
+        hw_states_positions_[0] = double(srl_.mot1_pose_ + srl_.mot2_pose_- 20)*0.000310304;
+        hw_states_velocities_[0] = (hw_states_positions_[0] - previous_position_) / period.seconds();
+        hw_states_robot_ready_[0] = 1.0;
+      
+        RCLCPP_DEBUG(
+            rclcpp::get_logger("LiftkitHardwareInterface"),
+            "Reading positions: %f",
+            hw_states_positions_[0]);
+        RCLCPP_DEBUG(
+            rclcpp::get_logger("LiftkitHardwareInterface"),
+            "Reading velocities: %f",
+            hw_states_velocities_[0]);
+        return hardware_interface::return_type::OK;
+    }
+
+    hardware_interface::return_type LiftkitHardwareInterface::write(const rclcpp::Time &time, const rclcpp::Duration &period)
+    {
+
+        srl_.current_target_ = hw_commands_positions_[0];
+        return hardware_interface::return_type::OK;
+    }
+}
+
+#include "pluginlib/class_list_macros.hpp"
+
+PLUGINLIB_EXPORT_CLASS(liftkit_hardware_interface::LiftkitHardwareInterface, hardware_interface::ActuatorInterface)

@@ -1,0 +1,11 @@
+  <library path="liftkit_hardware_interface">
+
+     <class name="liftkit_hardware_interface/LiftkitHardwareInterface"
+            type="liftkit_hardware_interface::LiftkitHardwareInterface"
+            base_class_type="hardware_interface::ActuatorInterface">
+        <description>
+        The ros2_control for the Ewellix liftkit Robot. 
+        </description>
+    </class>
+
+  </library>

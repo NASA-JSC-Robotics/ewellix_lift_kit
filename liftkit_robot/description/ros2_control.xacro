@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"  name="liftkit_ros2_control">
+    <!-- <xacro:macro name="liftkit_ros2_control" params="
+        name
+        ip_addr:=192.168.7.2
+        port:=8000
+        "> -->
+
+        <ros2_control name="liftkit_ros2_control" type="actuator">
+            <hardware>
+                <plugin>liftkit_hardware_interface/LiftkitHardwareInterface</plugin>
+                <param name="lift_name">liftkit</param>
+                <!-- <param name="ip_addr">${ip_addr}</param>
+                <param name="port">${port}</param> -->
+            </hardware>
+            <joint name="base_to_carriage">
+                <command_interface name="position"/>
+                <state_interface name="position"/>
+                <state_interface name="velocity"/>
+                <state_interface name="robot_ready"/>
+            </joint>
+        </ros2_control>
+    <!-- </xacro:macro> -->
+</robot>
