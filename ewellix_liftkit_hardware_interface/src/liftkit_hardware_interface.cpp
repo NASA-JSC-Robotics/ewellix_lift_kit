@@ -29,22 +29,23 @@ namespace liftkit_hardware_interface
             return CallbackReturn::ERROR;
         }
 
+        // TODO: check for the right number of joints
         hw_states_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
         hw_states_velocities_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
         hw_states_robot_ready_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
         hw_commands_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
         // signal(SIGINT, signal_callback_handler);
         system_info = info_;
-        // ip_addr = system_info.hardware_parameters["ip_addr"];
-        // port = stoi(system_info.hardware_parameters["port"]);
+        port = system_info.hardware_parameters["COM_port"];
+        baudrate = stoi(system_info.hardware_parameters["baudrate"]);
 
         return CallbackReturn::SUCCESS;
     }
 
     CallbackReturn LiftkitHardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
-        port = "/dev/ttyUSB0";
-        baudrate = 38400;
+        // port = "/dev/ttyUSB0"; 
+        // baudrate = 38400;
         RCLCPP_INFO(rclcpp::get_logger("RailEHardwareInterface"), "Successfully configure!");
         return CallbackReturn::SUCCESS;
     }

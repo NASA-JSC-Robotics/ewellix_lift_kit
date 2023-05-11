@@ -7,13 +7,46 @@ from launch.conditions import IfCondition, UnlessCondition
 
 def generate_launch_description():
     declared_arguments = []
+    # xacro args
     declared_arguments.append(
         DeclareLaunchArgument(
-            "example_arg",
-            default_value='false',
-            description="example arg to show how to do this",
+            "robot_name",
+            default_value="ewellix_liftkit",
+            description="name of the robot",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "tf_prefix",
+            default_value='""',
+            description="Prefix of the joint names, useful for \
+        multi-robot setup. If changed than also joint names in the controllers' configuration \
+        have to be updated.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_fake_hardware",
+            default_value="false",
+            description="Start robot with fake hardware mirroring command to its states.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "com_port",
+            default_value="/dev/ttyUSB0",
+            description="com port for the ewellix",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "baudrate",
+            default_value="34800",
+            description="baudrate for hte port",
+        )
+    )
+
+    # other args
     declared_arguments.append(
         DeclareLaunchArgument(
             "rviz",
@@ -21,7 +54,11 @@ def generate_launch_description():
             description="launch rviz",
         )
     )
-    example_arg = LaunchConfiguration("example_arg")
+    robot_name = LaunchConfiguration("robot_name")
+    tf_prefix = LaunchConfiguration("tf_prefix")
+    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
+    com_port = LaunchConfiguration("com_port")
+    baudrate = LaunchConfiguration("baudrate")
     rviz = LaunchConfiguration("rviz")
 
     robot_description_content = Command(
@@ -30,9 +67,21 @@ def generate_launch_description():
             " ",
             PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift_700mm.urdf.xacro"]),
             " ", 
-            "example_arg:=",
-            example_arg,
-            " "                                        
+            "name:=",
+            robot_name,
+            " ",
+            "tf_prefix:=",
+            tf_prefix,
+            " ",
+            "use_fake_hardware:=",
+            use_fake_hardware,
+            " ",
+            "com_port:=",
+            com_port,
+            " ",
+            "baudrate:=",
+            baudrate,
+            " ",
         ]
     )
     robot_description = {"robot_description": robot_description_content}

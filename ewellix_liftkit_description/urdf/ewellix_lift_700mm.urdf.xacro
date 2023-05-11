@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
+   <!-- robot name parameter -->
+  <xacro:arg name="name" default="ewellix_liftkit"/>
+  <xacro:arg name="tf_prefix" default="" />
+  <xacro:arg name="use_fake_hardware" default="false" />
+  <xacro:arg name="com_port" default="/dev/ttyUSB0" />
+  <xacro:arg name="baudrate" default="34800" />
+
+  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_macro.urdf.xacro"/>
+  <xacro:ewellix_lift
+    name="$(arg name)"
+    tf_prefix="$(arg tf_prefix)"
+    use_fake_hardware="$(arg use_fake_hardware)"
+    com_port="$(arg com_port)"
+    baudrate="$(arg baudrate)"/>
+
+</robot>
