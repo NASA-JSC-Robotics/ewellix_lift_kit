@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <robot name="ewellix_lift_700mm" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+<!-- TODO turn this into a macro-->
 
 <xacro:property name="M_PI" value="3.1415926535897931" />
     
@@ -9,7 +10,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="$(find liftkit)/meshes/ewellix_lift_base_700mm.stl"/>
+        <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_base_700mm.stl"/>
       </geometry>
       <material name="grey">
         <color rgba="0.7 0.7 0.7 1"/>
@@ -19,43 +20,33 @@
     <collision>
       <origin xyz="-0.005 0 0.00235" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="$(find liftkit)/meshes/ewellix_lift_base_700mm.stl"/>
+        <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_base_700mm.stl"/>
       </geometry>
     </collision>
 
   </link>
 
-  <!-- Lift base link joint
-  <joint name="ewellix_lift_base_joint" type="fixed">
-    <xacro:insert_block name="origin" />
-    <parent link="${parent}"/>
-    <child link="ewellix_lift_base_link" /> 
-  </joint> -->
+  <!-- Lift top link -->
+  <link name="ewellix_lift_top_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_top_700mm.stl"/>
+      </geometry>
+      <material name="grey">
+        <color rgba="0.7 0.7 0.7 1"/>
+      </material>
+    </visual>
 
+    <!-- TODO figure out how to retract the top link entirely without it colliding through the base. Consider splitting the top into two pieces with a mimic joint-->
+    <collision>
+      <origin xyz="-0.005 0 0.00235" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_top_700mm.stl"/>
+      </geometry>
+    </collision>
 
-
-    <!-- Lift top link -->
-    <link name="ewellix_lift_top_link">
-
-      <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="$(find liftkit)/meshes/ewellix_lift_top_700mm.stl"/>
-        </geometry>
-        <material name="grey">
-          <color rgba="0.7 0.7 0.7 1"/>
-        </material>
-      </visual>
-
-      <collision>
-        <origin xyz="-0.005 0 0.00235" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="$(find liftkit)/meshes/ewellix_lift_top_700mm.stl"/>
-        </geometry>
-      </collision>
-
-    </link>
-
+  </link>
 
   <!-- Lift top link joint -->
   <joint name="ewellix_lift_top_joint" type="prismatic">
@@ -66,18 +57,11 @@
     <axis xyz="0 0 1" /> 
   </joint>
 
-  <!--
-      PositionJointInterface
-      VelocityJointInterface
-      EffortJointInterface
-  -->
-
+  <!-- TODO add in fake hardware -->
   <ros2_control name="liftkit_ros2_control" type="actuator">
       <hardware>
           <plugin>liftkit_hardware_interface/LiftkitHardwareInterface</plugin>
           <param name="lift_name">liftkit</param>
-          <!-- <param name="ip_addr">${ip_addr}</param>
-          <param name="port">${port}</param> -->
       </hardware>
       <joint name="ewellix_lift_top_joint">
           <command_interface name="position"/>
