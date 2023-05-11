@@ -57,18 +57,6 @@
     <axis xyz="0 0 1" /> 
   </joint>
 
-  <!-- TODO add in fake hardware -->
-  <ros2_control name="liftkit_ros2_control" type="actuator">
-      <hardware>
-          <plugin>liftkit_hardware_interface/LiftkitHardwareInterface</plugin>
-          <param name="lift_name">liftkit</param>
-      </hardware>
-      <joint name="ewellix_lift_top_joint">
-          <command_interface name="position"/>
-          <state_interface name="position"/>
-          <state_interface name="velocity"/>
-          <state_interface name="robot_ready"/>
-      </joint>
-  </ros2_control>
+
   
 </robot>
