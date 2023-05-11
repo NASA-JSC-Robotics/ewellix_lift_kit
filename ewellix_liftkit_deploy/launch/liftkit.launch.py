@@ -20,42 +20,94 @@ import xacro
 
 from launch_ros.actions import Node
 def generate_launch_description():
-    # Get URDF via xacro
-    package_name='liftkit' #<--- CHANGE ME
+    declared_arguments = []
+    # xacro args
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "robot_name",
+            default_value="ewellix_liftkit",
+            description="name of the robot",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "tf_prefix",
+            default_value='""',
+            description="Prefix of the joint names, useful for \
+        multi-robot setup. If changed than also joint names in the controllers' configuration \
+        have to be updated.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_fake_hardware",
+            default_value="false",
+            description="Start robot with fake hardware mirroring command to its states.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "com_port",
+            default_value="/dev/ttyUSB0",
+            description="com port for the ewellix",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "baudrate",
+            default_value="34800",
+            description="baudrate for hte port",
+        )
+    )
 
-    
-    ip_addr = '192.168.7.2'
-    port = '8000'
-
-    # xacro_file = os.path.join(get_package_share_directory(package_name),'description','rail_e.urdf.xacro')
-    # robot_description_config = xacro.process_file(xacro_file)
-
-    # # Create a robot_state_publisher node
-    controller_params_file = os.path.join(get_package_share_directory(package_name),'config','liftkit_controllers.yaml')
-    # params = {'robot_description': robot_description_config.toxml(), 'ip_addr': ip_addr, 'port' : port}
+    # other args
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "rviz",
+            default_value='true',
+            description="launch rviz",
+        )
+    )
+    robot_name = LaunchConfiguration("robot_name")
+    tf_prefix = LaunchConfiguration("tf_prefix")
+    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
+    com_port = LaunchConfiguration("com_port")
+    baudrate = LaunchConfiguration("baudrate")
+    rviz = LaunchConfiguration("rviz")
 
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([FindPackageShare(package_name), "description", 'ewellix_lift_700mm.urdf.xacro']),
+            PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift_700mm.urdf.xacro"]),
+            " ", 
+            "name:=",
+            robot_name,
             " ",
-            # "ip_addr:=",
-            # ip_addr,
-            # " ",
-            # "port:=",
-            # port,
-            # " ",
+            "tf_prefix:=",
+            tf_prefix,
+            " ",
+            "use_fake_hardware:=",
+            use_fake_hardware,
+            " ",
+            "com_port:=",
+            com_port,
+            " ",
+            "baudrate:=",
+            baudrate,
+            " ",
         ]
     )
     robot_description = {"robot_description": robot_description_content}
-
-    rsp = Node(
+    
+    robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='screen',
         parameters=[robot_description]
     )
+
+    controller_params_file = os.path.join(get_package_share_directory('ewellix_liftkit_deploy'),'config','liftkit_controllers.yaml')
 
     controller_manager = Node(
         package="controller_manager",
@@ -106,14 +158,27 @@ def generate_launch_description():
     #     ],
     #    )
 
+    rviz_config_file = PathJoinSubstitution(
+        [FindPackageShare("ewellix_liftkit_deploy"), "rviz", "view_robot.rviz"]
+    )
+
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="log",
+        arguments=["-d", rviz_config_file],
+        condition=IfCondition(rviz)
+    )
 
     nodes = [
-        rsp,
+        robot_state_publisher,
         controller_manager,
         position_trajectory_controller_spawner,
-        joint_state_broadcaster_spawner
+        joint_state_broadcaster_spawner, 
+        rviz_node
         # io_and_status_controller_spawner,
         # controller_stopper
     ]
 
-    return LaunchDescription(nodes)
+    return LaunchDescription(declared_arguments + nodes)

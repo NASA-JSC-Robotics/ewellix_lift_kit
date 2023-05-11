@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(liftkit)
-
+project(ewellix_liftkit_deploy)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -10,11 +9,9 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(serial REQUIRED)
-
 
 install(
-  DIRECTORY config launch description
+  DIRECTORY config launch rviz
   DESTINATION share/${PROJECT_NAME}
 )
 
