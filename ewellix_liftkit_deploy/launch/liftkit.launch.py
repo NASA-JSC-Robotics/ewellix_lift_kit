@@ -56,7 +56,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "baudrate",
             default_value="34800",
-            description="baudrate for hte port",
+            description="baudrate for the port",
         )
     )
 
