@@ -156,7 +156,13 @@ namespace liftkit_hardware_interface
 
     hardware_interface::return_type LiftkitHardwareInterface::write(const rclcpp::Time &time, const rclcpp::Duration &period)
     {
-
+        static bool warned_ = false;
+        if (hw_commands_positions_[0] > height_limit && !warned_) {
+            RCLCPP_WARN(rclcpp::get_logger("RailEHardwareInterface"), "Commanded Height was greater than height limit! height being clamped.");
+            warned_ = true;
+        } else if (hw_commands_positions_[0] <= height_limit && warned_) {
+            warned_ = false;
+        }
         srl_.current_target_ = hw_commands_positions_[0];
         return hardware_interface::return_type::OK;
     }
