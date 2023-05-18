@@ -6,7 +6,6 @@
     tf_prefix
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
-    baudrate:=34800
     height_limit:=0.53">
     
     <xacro:unless value="${use_fake_hardware}">
@@ -15,7 +14,6 @@
             <plugin>liftkit_hardware_interface/LiftkitHardwareInterface</plugin>
             <param name="lift_name">liftkit</param>
             <param name="com_port">${com_port}</param>
-            <param name="baudrate">${baudrate}</param>
             <param name="height_limit">${height_limit}</param>
         </hardware>
 

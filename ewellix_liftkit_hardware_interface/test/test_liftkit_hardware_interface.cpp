@@ -12,10 +12,9 @@ int main()
 
         com_thread_ = thread(&SerialComTlt::comLoop,&srl_); //  RC thread
         if(srl_.startRs232Com()){        // Com started
-            srl_.moveUp();
-            // srl_.setColumnSize(0.2);
-            sleep(2);
-        }
+            srl_.current_target_ = 0.0;
+            sleep(10.0)
+;        }
         else{
             cout << "TltNode::TltNode - Remote function activation : Fail! " << endl;
             abort();

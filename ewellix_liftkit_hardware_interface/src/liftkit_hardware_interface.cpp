@@ -33,8 +33,7 @@ namespace liftkit_hardware_interface
         hw_commands_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
         // signal(SIGINT, signal_callback_handler);
         system_info = info_;
-        port = system_info.hardware_parameters["COM_port"];
-        baudrate = stoi(system_info.hardware_parameters["baudrate"]);
+        port = system_info.hardware_parameters["com_port"];
         height_limit = stof(system_info.hardware_parameters["height_limit"]);
         return CallbackReturn::SUCCESS;
     }
@@ -42,7 +41,7 @@ namespace liftkit_hardware_interface
     CallbackReturn LiftkitHardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
         srl_.height_limit_ = height_limit;
-        RCLCPP_INFO(rclcpp::get_logger("RailEHardwareInterface"), "Successfully configure!");
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully configured!");
         return CallbackReturn::SUCCESS;
     }
 
@@ -103,7 +102,7 @@ namespace liftkit_hardware_interface
         // // Trying to instantiate the driver
         try
         {
-            if(srl_.startSerialCom(port,baudrate))
+            if(srl_.startSerialCom(port,38400))
             {
                 com_thread_ = thread(&SerialComTlt::comLoop,&srl_); //  RC thread
                 if(srl_.startRs232Com()) 

@@ -19,7 +19,7 @@ SerialComTlt::SerialComTlt(){
     previous_pose_ = 0.0;
     current_pose_ = 0.0;
     current_target_ = 0.0;
-    height_limit_ = 0.53;
+    height_limit_ = 0.7;
 }
 
 
