@@ -13,9 +13,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/macros.hpp"
 
-const double Kp = 500;
-const double velocity_limit = 5000.0;
-
 using namespace std;
 
 namespace liftkit_hardware_interface
@@ -38,14 +35,13 @@ namespace liftkit_hardware_interface
         system_info = info_;
         port = system_info.hardware_parameters["COM_port"];
         baudrate = stoi(system_info.hardware_parameters["baudrate"]);
-
+        height_limit = stof(system_info.hardware_parameters["height_limit"]);
         return CallbackReturn::SUCCESS;
     }
 
     CallbackReturn LiftkitHardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
-        // port = "/dev/ttyUSB0"; 
-        // baudrate = 38400;
+        srl_.height_limit_ = height_limit;
         RCLCPP_INFO(rclcpp::get_logger("RailEHardwareInterface"), "Successfully configure!");
         return CallbackReturn::SUCCESS;
     }

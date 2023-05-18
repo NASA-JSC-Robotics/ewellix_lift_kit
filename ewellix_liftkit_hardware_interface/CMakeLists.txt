@@ -78,10 +78,6 @@ install(
   DESTINATION include
 )
 
-add_executable(robot_status_publisher src/robot_status_publisher.cpp)
-target_include_directories(robot_status_publisher PUBLIC include)
-ament_target_dependencies(robot_status_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${THIS_PACKAGE_INCLUDE_DEPENDS})
-
 add_executable(controller_stopper_node src/controller_stopper.cpp src/controller_stopper_node.cpp)
 target_include_directories(controller_stopper_node PUBLIC include)
 ament_target_dependencies(controller_stopper_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${THIS_PACKAGE_INCLUDE_DEPENDS})
@@ -95,7 +91,7 @@ if(BUILD_TESTING)
 endif()
 
 install(
-  TARGETS controller_stopper_node robot_status_publisher test_liftkit
+  TARGETS controller_stopper_node test_liftkit
   DESTINATION lib/${PROJECT_NAME}
 )
 

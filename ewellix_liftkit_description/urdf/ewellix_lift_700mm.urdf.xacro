@@ -6,6 +6,7 @@
   <xacro:arg name="use_fake_hardware" default="false" />
   <xacro:arg name="com_port" default="/dev/ttyUSB0" />
   <xacro:arg name="baudrate" default="34800" />
+  <xacro:arg name="height_limit" default="0.53" />
 
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_macro.urdf.xacro"/>
   <xacro:ewellix_lift
@@ -13,6 +14,7 @@
     tf_prefix="$(arg tf_prefix)"
     use_fake_hardware="$(arg use_fake_hardware)"
     com_port="$(arg com_port)"
-    baudrate="$(arg baudrate)"/>
+    baudrate="$(arg baudrate)"
+    height_limit="$(arg height_limit)"/>
 
 </robot>

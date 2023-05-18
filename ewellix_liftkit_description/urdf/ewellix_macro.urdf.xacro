@@ -9,6 +9,7 @@
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
     baudrate:=34800
+    height_limit:=0.53
   ">
     <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts -->
     <link name="${tf_prefix}ewellix_lift_base_link">
@@ -70,6 +71,7 @@
       tf_prefix="${tf_prefix}"
       com_port="${com_port}"
       baudrate="${baudrate}"
+      height_limit="${height_limit}"
     />
 
 

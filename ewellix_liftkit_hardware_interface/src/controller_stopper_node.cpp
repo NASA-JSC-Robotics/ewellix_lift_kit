@@ -1,5 +1,5 @@
 #include "rclcpp/rclcpp.hpp"
-#include "../include/liftkit_hardware_interface/controller_stopper.hpp"
+#include "liftkit_hardware_interface/controller_stopper.hpp"
 
 int main(int argc, char **argv)
 {

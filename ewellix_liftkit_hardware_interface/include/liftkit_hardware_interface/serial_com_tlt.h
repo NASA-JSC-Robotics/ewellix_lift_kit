@@ -52,6 +52,7 @@ class SerialComTlt
 
 
         bool run_;
+        double height_limit_;
         double current_target_;
         double current_pose_;
         double previous_pose_;

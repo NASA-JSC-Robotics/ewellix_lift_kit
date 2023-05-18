@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include "../include/liftkit_hardware_interface/controller_stopper.hpp"
+#include "liftkit_hardware_interface/controller_stopper.hpp"
 
 ControllerStopper::ControllerStopper(const rclcpp::Node::SharedPtr &node, bool stop_controllers_on_startup)
     : node_(node), stop_controllers_on_startup_(stop_controllers_on_startup), robot_running_(true)

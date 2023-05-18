@@ -60,6 +60,7 @@ namespace liftkit_hardware_interface
         hardware_interface::HardwareInfo system_info;
         std::string port;
         int baudrate;
+        double height_limit;
         double previous_position_;
         SerialComTlt srl_;
         thread com_thread_;
