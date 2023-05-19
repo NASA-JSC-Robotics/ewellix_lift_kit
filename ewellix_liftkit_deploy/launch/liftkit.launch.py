@@ -72,8 +72,8 @@ def generate_launch_description():
     robot_name = LaunchConfiguration("robot_name")
     tf_prefix = LaunchConfiguration("tf_prefix")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    com_port = LaunchConfiguration("com_port")
     rviz = LaunchConfiguration("rviz")
+    com_port = LaunchConfiguration("com_port")
     height_limit = LaunchConfiguration("height_limit")
 
     robot_description_content = Command(

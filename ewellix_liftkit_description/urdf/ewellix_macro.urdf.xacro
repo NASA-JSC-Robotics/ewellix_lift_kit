@@ -6,6 +6,7 @@
   <xacro:macro name="ewellix_lift" params="
     name
     tf_prefix
+    parent
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
     height_limit:=0.53
@@ -53,6 +54,13 @@
         </geometry>
       </collision>
     </link>
+
+    <!-- Lift base link joint -->
+    <joint name="${tf_prefix}ewellix_lift_base_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${tf_prefix}ewellix_lift_base_link" />
+      <origin xyz="-0.1115 0.0 0.0565" rpy="0 0 3.14159"/>
+    </joint>
 
     <!-- Lift top link joint -->
     <joint name="${tf_prefix}ewellix_lift_top_joint" type="prismatic">
