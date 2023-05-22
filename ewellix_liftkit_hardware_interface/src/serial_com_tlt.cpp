@@ -2,6 +2,11 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/macros.hpp"
 
+const double LIFTKIT_SETPOINT_THRESHOLD = 0.015;
+const double METERS_TO_TICKS = 1611.320754717;
+const double TICKS_TO_METERS = 0.000310304;
+const int TICKS_OFFSET = 10;
+
 SerialComTlt::SerialComTlt(){
     run_ = true;
     debug_ = false;
@@ -174,8 +179,8 @@ void SerialComTlt::setColumnSize(double m){
         m = height_limit_;
     if(getColumnSize() == m ) return;  // current pose = asked pose
 
-    mot_ticks_ = (m *  1611.320754717) +10;  //  meters <-> ticks :  max 0.53 <-> 864 | min 0.0 <-> 10
-    if(m <=0) mot_ticks_ = 10;  // min
+    mot_ticks_ = (m *  METERS_TO_TICKS) + TICKS_OFFSET;  //  meters <-> ticks :  max 0.53 <-> 864 | min 0.0 <-> 10
+    if(m <=0) mot_ticks_ = TICKS_OFFSET;  // min
     stop();
     moveMot1(mot_ticks_);
     moveMot2(mot_ticks_);
@@ -256,7 +261,7 @@ double SerialComTlt::getColumnSize(){
     getPoseM1();
     getPoseM2();
     previous_pose_ = current_pose_;
-    current_pose_ = double(mot1_pose_+ mot2_pose_ - 20)*0.000310304;
+    current_pose_ = double(mot1_pose_+ mot2_pose_ - 2*TICKS_OFFSET)*TICKS_TO_METERS;
     return current_pose_; 
 }
 
@@ -284,14 +289,24 @@ void SerialComTlt::comLoop(){
 
             sendCmd("RC",&params);
             getColumnSize();
-            if(current_target_ !=last_target_){
-                if (process_target_) {
+            if(current_target_ != last_target_ && !process_target_){
+                last_target_ = current_target_;
+                process_target_ = true;
+                if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
+                    moveUp();
+                } else if (current_target_ - current_pose_<= -LIFTKIT_SETPOINT_THRESHOLD) {
+                    moveDown();
+                } else {
+                    process_target_ = false;
                     stop();
                 }
-                setColumnSize(current_target_);
-                last_target_ = current_target_;
-                process_target_= true;
-            }
+
+            } 
+            
+            if (abs(current_pose_ - current_target_) <= LIFTKIT_SETPOINT_THRESHOLD) {
+                process_target_ = false;
+                stop();
+            } 
 
             usleep(10);
         }
