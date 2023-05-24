@@ -10,58 +10,117 @@
     com_port:=/dev/ttyUSB0
     baudrate:=34800
   ">
-    <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts -->
+    <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts (I'll give it a shot -Mike)-->
+    <!-- TODO is this a good collision? (No, it wasn't, raw meshes in general do not make good collision objects -Mike)-->
+    <!-- TODO figure out how to retract the top link entirely without it colliding through the base. Consider splitting the top into two pieces with a mimic joint (Will do -Mike)-->
+
+    <!-- Sure hope this is all works in SI units... -Mike-->
+    
+    <!--BASE-->
     <link name="${tf_prefix}ewellix_lift_base_link">
-
+      <inertia>
+        <mass value="1.7383784"/>
+        <inertia ixx="5.7788770e-03" ixy="0" ixz="0" iyy="7.0031715e-03" iyz="0" izz="1.2717018e-02"/>
+      </inertia>
       <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_base_700mm.stl"/>
+          <box size="0.220 0.200 0.015"/>
         </geometry>
-        <material name="grey">
-          <color rgba="0.7 0.7 0.7 1"/>
-        </material>
       </visual>
-
-      <!-- TODO is this a good collision?-->
       <collision>
-        <origin xyz="-0.005 0 0.00235" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_base_700mm.stl"/>
-        </geometry>
-      </collision>
-
-    </link>
-
-    <!-- Lift top link -->
-    <link name="${tf_prefix}ewellix_lift_top_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_top_700mm.stl"/>
-        </geometry>
-        <material name="grey">
-          <color rgba="0.7 0.7 0.7 1"/>
-        </material>
-      </visual>
-
-      <!-- TODO figure out how to retract the top link entirely without it colliding through the base. Consider splitting the top into two pieces with a mimic joint-->
-      <collision>
-        <origin xyz="-0.005 0 0.00235" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="file://$(find ewellix_liftkit_description)/meshes/visual/ewellix_lift_top_700mm.stl"/>
+          <box size="0.220 0.200 0.015"/>
         </geometry>
       </collision>
     </link>
 
-    <!-- Lift top link joint -->
-    <joint name="${tf_prefix}ewellix_lift_top_joint" type="prismatic">
+    <!--LOWER-->
+    <link name="${tf_prefix}ewellix_lift_lower_link">
+      <!-- TODO -Mike
+      <inertia>
+        <mass value=""/>
+        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+      </inertia>
+      -->
+      <visual>
+        <geometry>
+          <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_low.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.163 0.163 0.480"/>
+        </geometry>
+      </collision>
+    </link>
+    
+    <!--BASE TO LOWER-->
+    <joint name="base_to_lower" type="fixed">
       <parent link="${tf_prefix}ewellix_lift_base_link"/>
-      <child link="${tf_prefix}ewellix_lift_top_link" />
-      <origin xyz="0 0 0.730" rpy="0 0 0" />
-      <limit effort="1000" lower="0.0" upper="0.7" velocity="0.088"/>
-      <axis xyz="0 0 1" /> 
+      <child link="${tf_prefix}ewellix_lift_lower_link"/>
+      <origin xyz="0 0 0.2475" rpy="0 0 0"/>
     </joint>
+
+    <!--MIDDLE-->
+    <link name="${tf_prefix}ewellix_lift_middle_link">
+      <!-- TODO -Mike
+      <inertia>
+        <mass value=""/>
+        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+      </inertia>
+      -->
+      <visual>
+        <geometry>
+          <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_mid.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.146 0.146 0.483"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--HIGHER-->
+    <link name="${tf_prefix}ewellix_lift_higher_link">
+      <!-- TODO -Mike
+      <inertia>
+        <mass value=""/>
+        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+      </inertia>
+      -->
+      <visual>
+        <geometry>
+          <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_high.dae"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.129 0.129 0.488"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!--TOP-->
+    <link name="${tf_prefix}ewellix_lift_top_link">
+      <!-- TODO -Mike
+      <inertia>
+        <mass value=""/>
+        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+      </inertia>
+      -->
+      <visual>
+        <geometry>
+          <box size="0.200 0.220 0.015"/>
+        </geometry>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="0.200 0.220 0.015"/>
+        </geometry>
+      </collision>
+    </link>
+    
 
     <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_liftkit.ros2_control.xacro" />
     <xacro:ewellix_liftkit_ros2_control
