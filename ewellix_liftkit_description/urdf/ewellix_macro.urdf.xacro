@@ -26,6 +26,9 @@
         <geometry>
           <box size="0.220 0.200 0.015"/>
         </geometry>
+        <material name="gray">
+          <color rgba="0.85 0.85 0.85 1"/>
+        </material>
       </visual>
       <collision>
         <geometry>
@@ -36,12 +39,10 @@
 
     <!--LOWER-->
     <link name="${tf_prefix}ewellix_lift_lower_link">
-      <!-- TODO -Mike
       <inertia>
-        <mass value=""/>
-        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+        <mass value="1.9521070e+01"/>
+        <inertia ixx="0.46604111" ixy="0" ixz="0" iyy="0.46480515" iyz="-0.002668667" izz="0.1561"/>
       </inertia>
-      -->
       <visual>
         <geometry>
           <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_low.dae"/>
@@ -63,12 +64,10 @@
 
     <!--MIDDLE-->
     <link name="${tf_prefix}ewellix_lift_middle_link">
-      <!-- TODO -Mike
       <inertia>
-        <mass value=""/>
-        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+        <mass value="1.5593303e+01"/>
+        <inertia ixx="0.34930648" ixy="0" ixz="0" iyy="0.34930648" iyz="0" izz="0.095393471"/>
       </inertia>
-      -->
       <visual>
         <geometry>
           <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_mid.dae"/>
@@ -83,12 +82,10 @@
 
     <!--HIGHER-->
     <link name="${tf_prefix}ewellix_lift_higher_link">
-      <!-- TODO -Mike
       <inertia>
-        <mass value=""/>
-        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+        <mass value="1.5166778e+01"/>
+        <inertia ixx="0.35552099" ixy="9.6314989e-6" ixz="2.284786e-5" iyy="0.35552876" iyz="5.4910201e-5" izz="0.069925583"/>
       </inertia>
-      -->
       <visual>
         <geometry>
           <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_high.dae"/>
@@ -122,16 +119,17 @@
 
     <!--TOP-->
     <link name="${tf_prefix}ewellix_lift_top_link">
-      <!-- TODO -Mike
       <inertia>
-        <mass value=""/>
-        <inertia ixx="" ixy="" ixz="" iyy="" iyz="" izz=""/>
+        <mass value="4.9139525"/>
+        <inertia ixx="0.02015548" ixy="-2.281101e-5" ixz="0" iyy="0.01664141" iyz="0" izz="0.03661307"/>
       </inertia>
-      -->
       <visual>
         <geometry>
           <box size="0.200 0.220 0.015"/>
         </geometry>
+        <material name="gray">
+          <color rgba="0.85 0.85 0.85 1"/>
+        </material>
       </visual>
       <collision>
         <geometry>
