@@ -101,6 +101,20 @@
       </collision>
     </link>
 
+    <!--LOWER TO HIGHER-->
+    <joint name="lower_to_higher" type="fixed">
+      <parent link="${tf_prefix}ewellix_lift_lower_link"/>
+      <child link="${tf_prefix}ewellix_lift_higher_link"/>
+      <origin xyz="0 0 0.0454" rpy="0 0 0"/>
+    </joint>
+
+    <!--MIDDLE MIMIC HIGHER-->
+    <joint name="middle_mimic_higher" type="fixed">
+      <parent link="${tf_prefix}ewellix_lift_higher_link"/>
+      <child link="${tf_prefix}ewellix_lift_middle_link"/>
+      <origin xyz="0 0 -0.0222" rpy="0 0 0"/>
+    </joint>
+
     <!--TOP-->
     <link name="${tf_prefix}ewellix_lift_top_link">
       <!-- TODO -Mike
@@ -120,8 +134,14 @@
         </geometry>
       </collision>
     </link>
-    
 
+    <!--HIGHER TO TOP-->
+    <joint name="higher_to_top" type="fixed">
+      <parent link="${tf_prefix}ewellix_lift_higher_link"/>
+      <child link="${tf_prefix}ewellix_lift_top_link"/>
+      <origin xyz="0 0 0.2515" rpy="0 0 0"/>
+    </joint>
+    
     <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_liftkit.ros2_control.xacro" />
     <xacro:ewellix_liftkit_ros2_control
       name="${name}"
