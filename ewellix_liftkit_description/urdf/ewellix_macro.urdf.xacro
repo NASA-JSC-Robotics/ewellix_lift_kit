@@ -54,7 +54,7 @@
       </collision>
     </link>
     
-    <!--BASE TO LOWER-->
+    <!--BASE TO LOWER (FIXED)-->
     <joint name="base_to_lower" type="fixed">
       <parent link="${tf_prefix}ewellix_lift_base_link"/>
       <child link="${tf_prefix}ewellix_lift_lower_link"/>
@@ -101,18 +101,23 @@
       </collision>
     </link>
 
-    <!--LOWER TO HIGHER-->
-    <joint name="lower_to_higher" type="fixed">
+    <!--LOWER TO HIGHER (PRIS)-->
+    <joint name="lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
       <child link="${tf_prefix}ewellix_lift_higher_link"/>
       <origin xyz="0 0 0.0454" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="0" upper="0.7" effort="1000" velocity="1"/>
     </joint>
 
-    <!--MIDDLE MIMIC HIGHER-->
-    <joint name="middle_mimic_higher" type="fixed">
+    <!--MIDDLE MIMIC HIGHER (PRIS MIMIC)-->
+    <joint name="middle_mimic_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_higher_link"/>
       <child link="${tf_prefix}ewellix_lift_middle_link"/>
       <origin xyz="0 0 -0.0222" rpy="0 0 0"/>
+      <axis xyz="0 0 -1"/>
+      <limit lower="0" upper="0.351" effort="1000" velocity="1"/>
+      <mimic joint="lower_to_higher" multiplier="0.5" offset="0"/>
     </joint>
 
     <!--TOP-->
@@ -135,7 +140,7 @@
       </collision>
     </link>
 
-    <!--HIGHER TO TOP-->
+    <!--HIGHER TO TOP (FIXED)-->
     <joint name="higher_to_top" type="fixed">
       <parent link="${tf_prefix}ewellix_lift_higher_link"/>
       <child link="${tf_prefix}ewellix_lift_top_link"/>
