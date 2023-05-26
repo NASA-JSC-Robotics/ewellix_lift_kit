@@ -11,6 +11,7 @@
   <xacro:ewellix_lift
     name="$(arg name)"
     tf_prefix="$(arg tf_prefix)"
+    parent=""
     use_fake_hardware="$(arg use_fake_hardware)"
     com_port="$(arg com_port)"
     height_limit="$(arg height_limit)"/>

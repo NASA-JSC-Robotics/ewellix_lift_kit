@@ -23,7 +23,7 @@ class MinimalPublisher(Node):
 
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = ''
-        msg.joint_names = ['ewellix_lift_top_joint']
+        msg.joint_names = ['ewellix_lift_lower_to_higher']
 
         point = JointTrajectoryPoint()
         j1 = self.desired_position

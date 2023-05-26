@@ -11,7 +11,7 @@ controller_manager:
 position_trajectory_controller:
   ros__parameters:
     joints:
-      - ewellix_lift_top_joint
+      - ewellix_lift_lower_to_higher
 
     command_interfaces:
       - position

@@ -17,7 +17,7 @@
             <param name="height_limit">${height_limit}</param>
         </hardware>
 
-        <joint name="${tf_prefix}ewellix_lift_top_joint">
+        <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
           <command_interface name="position"/>
           <state_interface name="position"/>
           <state_interface name="velocity"/>
@@ -31,7 +31,7 @@
         <hardware>
             <plugin>mock_components/GenericSystem</plugin>
         </hardware>
-        <joint name="${tf_prefix}ewellix_lift_top_joint">
+        <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
           <command_interface name="position">
             <param name="min">0</param>
             <param name="max">0.7</param>
