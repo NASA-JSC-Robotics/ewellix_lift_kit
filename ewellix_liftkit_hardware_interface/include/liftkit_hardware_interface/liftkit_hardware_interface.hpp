@@ -48,7 +48,7 @@ namespace liftkit_hardware_interface
 
         LIFTKIT_HARDWARE_INTERFACE_PUBLIC
         hardware_interface::return_type write(const rclcpp::Time &time, const rclcpp::Duration &period) override;
-    
+        
     protected:
         // void signal_callback_handler(int signum);
         std::vector<double> hw_states_positions_;
@@ -63,7 +63,6 @@ namespace liftkit_hardware_interface
         double previous_position_;
         SerialComTlt srl_;
         thread com_thread_;
-
     };
 }
 
