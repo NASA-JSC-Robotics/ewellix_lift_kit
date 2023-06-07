@@ -7,7 +7,7 @@
   <xacro:arg name="com_port" default="/dev/ttyUSB0" />
   <xacro:arg name="baudrate" default="34800" />
 
-  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_macro.urdf.xacro"/>
+  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
   <xacro:ewellix_lift
     name="$(arg name)"
     tf_prefix="$(arg tf_prefix)"

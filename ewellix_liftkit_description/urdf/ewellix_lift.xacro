@@ -1,20 +1,19 @@
 <?xml version="1.0"?>
+
+
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:property name="M_PI" value="3.1415926535897931" />
+  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
 
   <xacro:macro name="ewellix_lift" params="
     name
     tf_prefix
+    max_height:=700
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
     baudrate:=34800
   ">
-    <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts (I'll give it a shot -Mike)-->
-    <!-- TODO is this a good collision? (No, it wasn't, raw meshes in general do not make good collision objects -Mike)-->
-    <!-- TODO figure out how to retract the top link entirely without it colliding through the base. Consider splitting the top into two pieces with a mimic joint (Will do -Mike)-->
-
-    <!-- Sure hope this is all works in SI units... -Mike-->
+    <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts-->
     
     <!--BASE-->
     <link name="${tf_prefix}ewellix_lift_base_link">
@@ -26,9 +25,7 @@
         <geometry>
           <box size="0.220 0.200 0.015"/>
         </geometry>
-        <material name="gray">
-          <color rgba="0.85 0.85 0.85 1"/>
-        </material>
+        <material name="gray"/>
       </visual>
       <collision>
         <geometry>
@@ -47,6 +44,7 @@
         <geometry>
           <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_low.dae"/>
         </geometry>
+        <material name="gray"/>
       </visual>
       <collision>
         <geometry>
@@ -72,6 +70,7 @@
         <geometry>
           <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_mid.dae"/>
         </geometry>
+        <material name="gray"/>
       </visual>
       <collision>
         <geometry>
@@ -90,6 +89,7 @@
         <geometry>
           <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_high.dae"/>
         </geometry>
+        <material name="gray"/>
       </visual>
       <collision>
         <geometry>
@@ -104,7 +104,7 @@
       <child link="${tf_prefix}ewellix_lift_higher_link"/>
       <origin xyz="0 0 0.0454" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
-      <limit lower="0" upper="0.7" effort="1000" velocity="1"/>
+      <limit lower="0" upper="${max_height / 1000.0}" effort="1000" velocity="1"/>
     </joint>
 
     <!--MIDDLE MIMIC HIGHER (PRIS MIMIC)-->
@@ -127,9 +127,7 @@
         <geometry>
           <box size="0.200 0.220 0.015"/>
         </geometry>
-        <material name="gray">
-          <color rgba="0.85 0.85 0.85 1"/>
-        </material>
+        <material name="gray"/>
       </visual>
       <collision>
         <geometry>
