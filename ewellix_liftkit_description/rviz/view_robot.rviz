@@ -71,6 +71,21 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        ewellix_lift_lower_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        ewellix_lift_middle_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        ewellix_lift_higher_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         ewellix_lift_top_link:
           Alpha: 1
           Show Axes: false

@@ -1,6 +1,11 @@
-#include "../include/liftkit_hardware_interface/serial_com_tlt.h"
+#include "liftkit_hardware_interface/serial_com_tlt.h"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/macros.hpp"
 
-
+const double LIFTKIT_SETPOINT_THRESHOLD = 0.015;
+const double METERS_TO_TICKS = 1611.320754717;
+const double TICKS_TO_METERS = 0.000310304;
+const int TICKS_OFFSET = 10;
 
 SerialComTlt::SerialComTlt(){
     run_ = true;
@@ -19,6 +24,7 @@ SerialComTlt::SerialComTlt(){
     previous_pose_ = 0.0;
     current_pose_ = 0.0;
     current_target_ = 0.0;
+    height_limit_ = 0.7;
 }
 
 
@@ -29,16 +35,9 @@ SerialComTlt::~SerialComTlt(){
     run_= false;
     if(serial_tlt_.isOpen()){
         serial_tlt_.close();
-        cout << "SerialComTlt::~SerialComTlt - COM CLOSED !" << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::~SerialComTlt - COM CLOSED !");
     }
 }
-
-// void SerialComTlt::signal_callback_handler(int signum)
-// {
-//     stopRs232Com();    //Com stopped
-//     run_= false;       // stop RC thread loop
-//     exit(signum);
-// }
 
 bool SerialComTlt::startSerialCom(string port, int baud_rate){
 
@@ -50,11 +49,11 @@ bool SerialComTlt::startSerialCom(string port, int baud_rate){
   
     try{
         serial_tlt_.open();
-        cout << "SerialComTlt::startSerialCom - COM OPEN !" << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::startSerialCom - COM OPEN !");
         return true;
     }
     catch (serial::IOException e){
-        cout << "SerialComTlt::startSerialCom - serial::IOException: " << e.what() << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::startSerialCom - serial::IOException: %s", e.what());
         return false;
     }
 
@@ -71,7 +70,7 @@ bool SerialComTlt::startRs232Com(){
     if(result){
         com_started_=true;
         stop_loop_=true;
-        cout << "SerialComTlt::startRs232Com - Remote function activated" << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::startRs232Com - Remote function activated");
         vector<unsigned char> params = {0x01, 0x00, 0xff};
         sendCmd("RC",&params);
         getColumnSize();
@@ -94,7 +93,7 @@ bool SerialComTlt::stopRs232Com(){
     bool result = sendCmd("RA",&params);
 
     if(result){
-        cout << "SerialComTlt::stopRs232Com - Remote function deactivated" << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::stopRs232Com - Remote function deactivated");
         return true;
     }
     else{
@@ -176,13 +175,12 @@ void SerialComTlt::moveMot2(int pose){
 * Control column size
 */
 void SerialComTlt::setColumnSize(double m){
-    if(m >0.53) m = 0.53;
+    if (m > height_limit_)
+        m = height_limit_;
     if(getColumnSize() == m ) return;  // current pose = asked pose
 
-    mot_ticks_ = (m *  1611.320754717) +10;  //  meters <-> ticks :  max 0.53 <-> 864 | min 0.0 <-> 10
-    int delta1 = abs(mot_ticks_ - mot1_pose_);
-    int delta2 = abs(mot_ticks_ - mot2_pose_);
-    if(m <=0) mot_ticks_ = 10;  // min
+    mot_ticks_ = (m *  METERS_TO_TICKS) + TICKS_OFFSET;  //  meters <-> ticks :  max 0.53 <-> 864 | min 0.0 <-> 10
+    if(m <=0) mot_ticks_ = TICKS_OFFSET;  // min
     stop();
     moveMot1(mot_ticks_);
     moveMot2(mot_ticks_);
@@ -263,7 +261,7 @@ double SerialComTlt::getColumnSize(){
     getPoseM1();
     getPoseM2();
     previous_pose_ = current_pose_;
-    current_pose_ = double(mot1_pose_+ mot2_pose_ - 20)*0.000310304;
+    current_pose_ = double(mot1_pose_+ mot2_pose_ - 2*TICKS_OFFSET)*TICKS_TO_METERS;
     return current_pose_; 
 }
 
@@ -274,12 +272,10 @@ double SerialComTlt::getColumnVelocity(double dt){
 void SerialComTlt::getPoseM1(){
     vector<unsigned char> params = {0x11,0x00};
     sendCmd("RG",&params);
-    if (debug_) cout <<"SerialComTlt::getPoseM1 - Motor1 ntick: " << mot1_pose_ <<endl ;
 }
 void SerialComTlt::getPoseM2(){
     vector<unsigned char> params = {0x12,0x00};
     sendCmd("RG",&params);
-    if (debug_) cout <<"SerialComTlt::getPoseM2 - Motor2 ntick: " << mot2_pose_ <<endl ;
 }
 
 
@@ -293,14 +289,24 @@ void SerialComTlt::comLoop(){
 
             sendCmd("RC",&params);
             getColumnSize();
-            if(current_target_ !=last_target_){
-                if (process_target_) {
+            if(current_target_ != last_target_ && !process_target_){
+                last_target_ = current_target_;
+                process_target_ = true;
+                if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
+                    moveUp();
+                } else if (current_target_ - current_pose_<= -LIFTKIT_SETPOINT_THRESHOLD) {
+                    moveDown();
+                } else {
+                    process_target_ = false;
                     stop();
                 }
-                setColumnSize(current_target_);
-                last_target_ = current_target_;
-                process_target_= true;
-            }
+
+            } 
+            
+            if (abs(current_pose_ - current_target_) <= LIFTKIT_SETPOINT_THRESHOLD) {
+                process_target_ = false;
+                stop();
+            } 
 
             usleep(10);
         }
@@ -314,21 +320,16 @@ void SerialComTlt::comLoop(){
 bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
     lock_.lock();
     vector<unsigned char> final_cmd;
-    if (debug_) cout <<"----------------------"<< endl << "Input Cmd:  ";
     for (const auto &item : cmd) {
-        if (debug_) cout << item;
         final_cmd.push_back(int(item));  // convert cmd string in hex value
     }
     
-    if (debug_) cout <<" [";
     if (!param->empty()){
         for(vector<unsigned char>::iterator it=param->begin(); it!=param->end(); ++it){
-            if (debug_) cout <<' ' <<  int(*it);
             final_cmd.push_back(*it);       // add params to the cmd
         }
     }
 
-    if (debug_) cout <<" ]"<< endl;
     // Compute checksum
     unsigned short checksum = calculateChecksum(&final_cmd);
     unsigned short lsb = checksum &0x00FF;
@@ -338,16 +339,12 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
     final_cmd.push_back(msb);
 
     if (debug_){
-        // checksum = (lsb<<8) | msb;
-        // stringstream checksum_hex;
-        // checksum_hex << hex << checksum;
-        // cout << "Checksum = "<< checksum_hex.str() << endl;
-        
+ 
         stringstream final_cmd_hex;
         for (unsigned short j: final_cmd){
             final_cmd_hex <<  hex << j << ' ';
         }
-        cout << "SerialComTlt::sendCmd - Output Cmd: " << final_cmd_hex.str()<< endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Output Cmd: %s", final_cmd_hex.str().c_str());
     }
 
     if ( serial_tlt_.isOpen() ){
@@ -358,14 +355,14 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
             stop_loop_= false;
         }
         catch (serial::IOException e){
-            cout << "SerialComTlt::sendCmd - serial::IOException: " << e.what() << endl;
+            RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Output Cmd: %s", e.what());
         }
     }
     usleep(10);
     
     vector<unsigned char> output = feedback();
      if(output.size() == 0){
-        cout << "SerialComTlt::sendCmd - Response empty" << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Response empty");
         lock_.unlock();
         return false;
     }
@@ -374,11 +371,11 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
         for (unsigned short j: output){
             output_hex <<  hex << j << ' ';
         }
-        cout << "SerialComTlt::sendCmd - Response: " << output_hex.str()<< endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Response: %s", output_hex.str().c_str());
     }
    
     if(!checkResponseChecksum(&output) || !checkResponseAck(&output)){
-        cout << "SerialComTlt::sendCmd - Cmd failed, retry" << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Cmd failed, retry");
         serial_tlt_.flush();
         usleep(300);
         serial_tlt_.write(final_cmd);
@@ -389,10 +386,10 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
             for (unsigned short j: output){
                 output_hex <<  hex << j << ' ';
             }
-            cout << "SerialComTlt::sendCmd - Response: " << output_hex.str()<< endl;
+            RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Response: %s", output_hex.str().c_str());
         }
         if(output.size() == 0 ||!checkResponseChecksum(&output) || !checkResponseAck(&output)){
-            cout << "SerialComTlt::sendCmd - Command FAILED !!!" << endl;
+            RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Command FAILED !!!");
             lock_.unlock();
             startRs232Com();
             return false;
@@ -404,7 +401,6 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
         else if( *(param->begin()) == 0x12 )    extractPose(&output,2);
         
     }
-    if (debug_) cout <<"----------------------" << endl;
 
     lock_.unlock();
     return true;
@@ -445,7 +441,6 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
                 // command detector
                 if(i==2){  
                     command_type = last_data; 
-                    if (debug_) cout << "Response Command type : R"<< command_type << endl;
                 }
 
                 // success detector
@@ -512,7 +507,7 @@ bool SerialComTlt::checkResponseChecksum(vector<unsigned char> *response){
         unsigned short checksum = (response_checksum_lsb<<8) | response_checksum_msb;
         stringstream checksum_hex;
         checksum_hex << hex << checksum;
-        cout << "SerialComTlt::checkResponseChecksum - Response Checksum = "<< checksum_hex.str() << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::checkResponseChecksum - Response Checksum = %s", checksum_hex.str().c_str());
     }
     
     vector<unsigned char> response_msg = *response;
@@ -526,7 +521,7 @@ bool SerialComTlt::checkResponseChecksum(vector<unsigned char> *response){
         unsigned short checksum2 = (computed_lsb<<8) | computed_msb;
         stringstream checksum_hex;
         checksum_hex << hex << checksum2;
-        cout << "SerialComTlt::checkResponseChecksum - Computed Checksum = "<< checksum_hex.str() << endl;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::checkResponseChecksum - Computed Checksum = %s", checksum_hex.str().c_str());
     }
     
     if(response_checksum_lsb == computed_lsb && response_checksum_msb == computed_msb){
@@ -547,16 +542,16 @@ bool SerialComTlt::checkResponseAck(vector<unsigned char> *response){
         }
     
         else if (cmd_status == 0x81 ){
-            cout << "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 81 Parameter data error "<< endl;
+            RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 81 Parameter data error ");
         }
         else if (cmd_status == 0x82 ){
-            cout << "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 82 Parameter count error "<< endl;
+            RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 82 Parameter count error");
         }
         else if (cmd_status == 0x83 ){
-            cout << "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 83 Command error "<< endl;
+            RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 83 Command error ");
         }
         else if (cmd_status == 0x84 ){
-            cout << "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 84 Permission error "<< endl;
+            RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::checkResponseAck - Cmd Fail! :  Error 84 Permission error ");
         }
     }
     else{
@@ -569,7 +564,6 @@ bool SerialComTlt::checkResponseAck(vector<unsigned char> *response){
 *  Extract motor pose from the reponse
 */
 bool SerialComTlt::extractPose(vector<unsigned char> *response,int mot){
-    int i =0;
     int position = (unsigned char)(*(response->end()-5)) << 8 | (unsigned char)(*(response->end()-6));
 
     if(mot == 1) mot1_pose_ = position;

@@ -52,11 +52,12 @@ def generate_launch_description():
             description="com port for the ewellix",
         )
     )
+
     declared_arguments.append(
         DeclareLaunchArgument(
-            "baudrate",
-            default_value="34800",
-            description="baudrate for the port",
+            "height_limit",
+            default_value="0.53",
+            description="Maximium height in meters for the lift",
         )
     )
 
@@ -71,9 +72,9 @@ def generate_launch_description():
     robot_name = LaunchConfiguration("robot_name")
     tf_prefix = LaunchConfiguration("tf_prefix")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    com_port = LaunchConfiguration("com_port")
-    baudrate = LaunchConfiguration("baudrate")
     rviz = LaunchConfiguration("rviz")
+    com_port = LaunchConfiguration("com_port")
+    height_limit = LaunchConfiguration("height_limit")
 
     robot_description_content = Command(
         [
@@ -93,8 +94,8 @@ def generate_launch_description():
             "com_port:=",
             com_port,
             " ",
-            "baudrate:=",
-            baudrate,
+            "height_limit:=",
+            height_limit,
             " ",
         ]
     )
@@ -131,33 +132,6 @@ def generate_launch_description():
                 "100",],
     )
 
-    # io_and_status_controller_spawner = Node(
-    #     package="controller_manager",
-    #     executable="spawner",
-    #     arguments=["io_and_status_controller", "--controller-manager-timeout",
-    #             "100",],
-    # )
-
-    # robot_status_publisher = Node(
-    #      package='liftkit_hardware_interface',
-    #      executable='robot_status_publisher', 
-    #      name='robot_status_publisher' 
-    #    )
-    
-    # controller_stopper = Node(
-    #      package='liftkit_hardware_interface',
-    #      executable='controller_stopper_node', 
-    #      name='controller_stopper_node',
-    #      parameters=[
-    #         {
-    #             "consistent_controllers": [
-    #                 "io_and_status_controller",
-    #                 "joint_state_broadcaster",
-    #             ]
-    #         },
-    #     ],
-    #    )
-
     rviz_config_file = PathJoinSubstitution(
         [FindPackageShare("ewellix_liftkit_deploy"), "rviz", "view_robot.rviz"]
     )
@@ -177,8 +151,6 @@ def generate_launch_description():
         position_trajectory_controller_spawner,
         joint_state_broadcaster_spawner, 
         rviz_node
-        # io_and_status_controller_spawner,
-        # controller_stopper
     ]
 
     return LaunchDescription(declared_arguments + nodes)

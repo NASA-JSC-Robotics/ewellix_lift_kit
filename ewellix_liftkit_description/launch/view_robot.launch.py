@@ -48,9 +48,9 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "baudrate",
-            default_value="34800",
-            description="baudrate for hte port",
+            "height_limit",
+            default_value="0.53",
+            description="Maximium height in meters for the lift",
         )
     )
 
@@ -67,8 +67,8 @@ def generate_launch_description():
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
     max_height = LaunchConfiguration("max_height")
     com_port = LaunchConfiguration("com_port")
-    baudrate = LaunchConfiguration("baudrate")
     rviz = LaunchConfiguration("rviz")
+    height_limit = LaunchConfiguration("height_limit")
 
     robot_description_content = Command(
         [
@@ -91,8 +91,8 @@ def generate_launch_description():
             "com_port:=",
             com_port,
             " ",
-            "baudrate:=",
-            baudrate,
+            "height_limit:=",
+            height_limit,
             " ",
         ]
     )

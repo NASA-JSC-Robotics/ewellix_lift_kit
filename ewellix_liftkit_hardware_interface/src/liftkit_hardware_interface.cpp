@@ -13,9 +13,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/macros.hpp"
 
-const double Kp = 500;
-const double velocity_limit = 5000.0;
-
 using namespace std;
 
 namespace liftkit_hardware_interface
@@ -36,17 +33,15 @@ namespace liftkit_hardware_interface
         hw_commands_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
         // signal(SIGINT, signal_callback_handler);
         system_info = info_;
-        port = system_info.hardware_parameters["COM_port"];
-        baudrate = stoi(system_info.hardware_parameters["baudrate"]);
-
+        port = system_info.hardware_parameters["com_port"];
+        height_limit = stof(system_info.hardware_parameters["height_limit"]);
         return CallbackReturn::SUCCESS;
     }
 
     CallbackReturn LiftkitHardwareInterface::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
     {
-        // port = "/dev/ttyUSB0"; 
-        // baudrate = 38400;
-        RCLCPP_INFO(rclcpp::get_logger("RailEHardwareInterface"), "Successfully configure!");
+        srl_.height_limit_ = height_limit;
+        RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully configured!");
         return CallbackReturn::SUCCESS;
     }
 
@@ -107,7 +102,7 @@ namespace liftkit_hardware_interface
         // // Trying to instantiate the driver
         try
         {
-            if(srl_.startSerialCom(port,baudrate))
+            if(srl_.startSerialCom(port,38400))
             {
                 com_thread_ = thread(&SerialComTlt::comLoop,&srl_); //  RC thread
                 if(srl_.startRs232Com()) 
@@ -161,8 +156,19 @@ namespace liftkit_hardware_interface
 
     hardware_interface::return_type LiftkitHardwareInterface::write(const rclcpp::Time &time, const rclcpp::Duration &period)
     {
-
-        srl_.current_target_ = hw_commands_positions_[0];
+        static bool warned_ = false;
+        if (hw_commands_positions_[0] > height_limit) {
+            srl_.current_target_ = height_limit;
+            if (!warned_) {
+                RCLCPP_WARN(rclcpp::get_logger("RailEHardwareInterface"), "Commanded Height was greater than height limit! height being clamped.");
+                warned_ = true;
+            }
+        } else if (hw_commands_positions_[0] <= height_limit && warned_) {
+            warned_ = false;
+            srl_.current_target_ = hw_commands_positions_[0];
+        } else {
+            srl_.current_target_ = hw_commands_positions_[0];
+        }
         return hardware_interface::return_type::OK;
     }
 }
