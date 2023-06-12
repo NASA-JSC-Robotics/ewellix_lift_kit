@@ -55,6 +55,7 @@ class SerialComTlt
         double height_limit_;
         double current_target_;
         double current_pose_;
+        double current_velocity_;
         double previous_pose_;
         bool go_up_;
         bool go_down_;
@@ -96,6 +97,7 @@ class SerialComTlt
         void stopMot1();
         void stopMot2();
         void stopMotAll();
+        void setLiftSpeed(int speed);
 
         // For the Checksum
         unsigned short CRC_TABLE[256] = {

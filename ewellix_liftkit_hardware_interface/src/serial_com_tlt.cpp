@@ -6,7 +6,7 @@ const double LIFTKIT_SETPOINT_THRESHOLD = 0.011;
 const double METERS_TO_TICKS = 1611.320754717;
 const double TICKS_TO_METERS = 0.000310304;
 const int TICKS_OFFSET = 10;
-const int Kp = 3000;
+const int Kp = 1000;
 
 SerialComTlt::SerialComTlt(){
     run_ = true;
@@ -191,8 +191,6 @@ void SerialComTlt::setColumnSize(double m){
 *  Move up both motors
 */
 void SerialComTlt::moveUp(int speed){
-    if (speed > 100) speed = 100;
-    if (speed < 30) speed = 30;
     moveMot1Up(speed);
     moveMot2Up(speed);
 }
@@ -227,28 +225,33 @@ void SerialComTlt::moveDownN(int n){
 
 
 void SerialComTlt::moveMot1Up(int speed){
-    vector<unsigned char> params = {0x04, 0x00,0x10,0x30,speed,0x00};
-    sendCmd("RT",&params);      //set speed 100%
-    params = {0x00, 0x02, 0xff}; 
+
+    vector<unsigned char> params = {0x00, 0x02, 0xff}; 
     sendCmd("RE",&params);  // start moving
 }
 void SerialComTlt::moveMot2Up(int speed){
-    vector<unsigned char> params = {0x04, 0x00,0x12,0x30,speed,0x00};
-    sendCmd("RT",&params);      //set speed 100%
-    params = {0x01, 0x02, 0xff}; 
+
+    vector<unsigned char> params = {0x01, 0x02, 0xff}; 
     sendCmd("RE",&params);  // start moving
 }
 void SerialComTlt::moveMot1Down(int speed){
-    vector<unsigned char> params = {0x04, 0x00,0x10,0x30,speed,0x00};
-    sendCmd("RT",&params);      //set speed 100%
-    params = {0x00, 0x01, 0xff}; 
+
+    vector<unsigned char> params = {0x00, 0x01, 0xff}; 
     sendCmd("RE",&params);  // start moving
 }
 void SerialComTlt::moveMot2Down(int speed){
-    vector<unsigned char> params = {0x04, 0x00,0x12,0x30,speed,0x00};
-    sendCmd("RT",&params);      //set speed 100%
-    params = {0x01, 0x01, 0xff}; 
+
+    vector<unsigned char> params = {0x01, 0x01, 0xff}; 
     sendCmd("RE",&params);  // start moving
+}
+
+void SerialComTlt::setLiftSpeed(int speed) {
+    if (abs(speed) > 100) speed = 100;
+    if (abs(speed) < 32) speed = 32;
+    vector<unsigned char> params = {0x04, 0x00,0x12,0x30,speed,0x00};
+    sendCmd("RT",&params);     
+    params = {0x04, 0x00,0x11,0x30,abs(speed),0x00};
+    sendCmd("RT",&params);    
 }
 
 void SerialComTlt::stop(){
@@ -277,7 +280,7 @@ double SerialComTlt::getColumnSize(){
 }
 
 double SerialComTlt::getColumnVelocity(double dt){
-    return (current_pose_ - previous_pose_) / dt;
+    return current_velocity_;
 }
 
 void SerialComTlt::getPoseM1(){
@@ -295,20 +298,23 @@ void SerialComTlt::getPoseM2(){
 */
 void SerialComTlt::comLoop(){
     vector<unsigned char> params = {0x01, 0x00, 0xff};
+    int speed_command;
+    auto last_time = std::chrono::steady_clock::now();
+    auto curr_time = std::chrono::steady_clock::now();
     while(run_){
         while(com_started_){
 
             sendCmd("RC",&params);
             getColumnSize();
+            speed_command = abs(Kp * (current_target_ - current_pose_));
+            setLiftSpeed(speed_command);
             if(current_target_ != last_target_ && !process_target_){
                 last_target_ = current_target_;
                 process_target_ = true;
                 if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
-                    int speed_command = Kp * (current_target_ - current_pose_);
                     RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Speed Command: %d", speed_command);
                     moveUp(speed_command);
                 } else if (current_target_ - current_pose_<= -LIFTKIT_SETPOINT_THRESHOLD) {
-                    int speed_command = Kp * (current_pose_ - current_target_);
                     RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Speed Command: %d", speed_command);
                     moveDown(speed_command);
                 } else {
@@ -322,7 +328,12 @@ void SerialComTlt::comLoop(){
                 process_target_ = false;
                 stop();
             } 
+            // get period of cycle for velocity calculation
+            last_time = curr_time;
+            curr_time = std::chrono::steady_clock::now();
+            int64_t dt_read_ = std::chrono::duration_cast<std::chrono::nanoseconds> (curr_time - last_time).count();
 
+            current_velocity_ = (current_pose_ - previous_pose_) / (static_cast<double>(dt_read_)/1.0e9);
             usleep(100);
         }
         usleep(1);
