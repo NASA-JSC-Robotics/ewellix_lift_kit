@@ -10,29 +10,32 @@
     tf_prefix
     parent
     height_limit:=0.7
+    omit_plates:=false
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
   ">
     <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts-->
     
-    <!--BASE-->
-    <link name="${tf_prefix}ewellix_lift_base_link">
-      <inertia>
-        <mass value="1.7383784"/>
-        <inertia ixx="5.7788770e-03" ixy="0" ixz="0" iyy="7.0031715e-03" iyz="0" izz="1.2717018e-02"/>
-      </inertia>
-      <visual>
-        <geometry>
-          <box size="0.220 0.200 0.015"/>
-        </geometry>
-        <material name="gray"/>
-      </visual>
-      <collision>
-        <geometry>
-          <box size="0.220 0.200 0.015"/>
-        </geometry>
-      </collision>
-    </link>
+    <!--BASE (omit_plates=false)-->
+    <xacro:if value="${not omit_plates}">
+      <link name="${tf_prefix}ewellix_lift_base_link">
+        <inertia>
+          <mass value="1.7383784"/>
+          <inertia ixx="5.7788770e-03" ixy="0" ixz="0" iyy="7.0031715e-03" iyz="0" izz="1.2717018e-02"/>
+        </inertia>
+        <visual>
+          <geometry>
+            <box size="0.220 0.200 0.015"/>
+          </geometry>
+          <material name="gray"/>
+        </visual>
+        <collision>
+          <geometry>
+            <box size="0.220 0.200 0.015"/>
+          </geometry>
+        </collision>
+      </link>
+    </xacro:if>
 
     <!--LOWER-->
     <link name="${tf_prefix}ewellix_lift_lower_link">
@@ -53,12 +56,14 @@
       </collision>
     </link>
     
-    <!--BASE TO LOWER (FIXED)-->
-    <joint name="base_to_lower" type="fixed">
-      <parent link="${tf_prefix}ewellix_lift_base_link"/>
-      <child link="${tf_prefix}ewellix_lift_lower_link"/>
-      <origin xyz="0 0 0.2475" rpy="0 0 0"/>
-    </joint>
+    <!--BASE TO LOWER (FIXED, omit_plates=false)-->
+    <xacro:if value="${not omit_plates}">
+      <joint name="base_to_lower" type="fixed">
+        <parent link="${tf_prefix}ewellix_lift_base_link"/>
+        <child link="${tf_prefix}ewellix_lift_lower_link"/>
+        <origin xyz="0 0 0.2475" rpy="0 0 0"/>
+      </joint>
+    </xacro:if>
 
     <!--MIDDLE-->
     <link name="${tf_prefix}ewellix_lift_middle_link">
@@ -118,30 +123,34 @@
     </joint>
 
     <!--TOP-->
-    <link name="${tf_prefix}ewellix_lift_top_link">
-      <inertia>
-        <mass value="4.9139525"/>
-        <inertia ixx="0.02015548" ixy="-2.281101e-5" ixz="0" iyy="0.01664141" iyz="0" izz="0.03661307"/>
-      </inertia>
-      <visual>
-        <geometry>
-          <box size="0.200 0.220 0.015"/>
-        </geometry>
-        <material name="gray"/>
-      </visual>
-      <collision>
-        <geometry>
-          <box size="0.200 0.220 0.015"/>
-        </geometry>
-      </collision>
-    </link>
+    <xacro:if value="${not omit_plates}">
+      <link name="${tf_prefix}ewellix_lift_top_link">
+        <inertia>
+          <mass value="4.9139525"/>
+          <inertia ixx="0.02015548" ixy="-2.281101e-5" ixz="0" iyy="0.01664141" iyz="0" izz="0.03661307"/>
+        </inertia>
+        <visual>
+          <geometry>
+            <box size="0.200 0.220 0.015"/>
+          </geometry>
+          <material name="gray"/>
+        </visual>
+        <collision>
+          <geometry>
+            <box size="0.200 0.220 0.015"/>
+          </geometry>
+        </collision>
+      </link>
+    </xacro:if>
 
     <!--HIGHER TO TOP (FIXED)-->
-    <joint name="higher_to_top" type="fixed">
-      <parent link="${tf_prefix}ewellix_lift_higher_link"/>
-      <child link="${tf_prefix}ewellix_lift_top_link"/>
-      <origin xyz="0 0 0.2515" rpy="0 0 0"/>
-    </joint>
+    <xacro:if value="${not omit_plates}">
+      <joint name="higher_to_top" type="fixed">
+        <parent link="${tf_prefix}ewellix_lift_higher_link"/>
+        <child link="${tf_prefix}ewellix_lift_top_link"/>
+        <origin xyz="0 0 0.2515" rpy="0 0 0"/>
+      </joint>
+    </xacro:if>
     
     <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_liftkit.ros2_control.xacro" />
     <xacro:ewellix_liftkit_ros2_control

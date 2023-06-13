@@ -3,17 +3,21 @@
    <!-- robot name parameter -->
   <xacro:arg name="name" default="ewellix_liftkit"/>
   <xacro:arg name="tf_prefix" default="" />
+  <xacro:arg name="parent" default="" />
+  <xacro:arg name="height_limit" default="0.7" />
+  <xacro:arg name="omit_plates" default="false" />
   <xacro:arg name="use_fake_hardware" default="false" />
   <xacro:arg name="com_port" default="/dev/ttyUSB0" />
-  <xacro:arg name="height_limit" default="0.53" />
 
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
   <xacro:ewellix_lift
     name="$(arg name)"
     tf_prefix="$(arg tf_prefix)"
     parent=""
+    height_limit="$(arg height_limit)"
+    omit_plates="false"
     use_fake_hardware="$(arg use_fake_hardware)"
     com_port="$(arg com_port)"
-    height_limit="$(arg height_limit)"/>
+    />
 
 </robot>
