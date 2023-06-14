@@ -2,10 +2,11 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/macros.hpp"
 
-const double LIFTKIT_SETPOINT_THRESHOLD = 0.015;
+const double LIFTKIT_SETPOINT_THRESHOLD = 0.011;
 const double METERS_TO_TICKS = 1611.320754717;
 const double TICKS_TO_METERS = 0.000310304;
 const int TICKS_OFFSET = 10;
+const int Kp = 1000;
 
 SerialComTlt::SerialComTlt(){
     run_ = true;
@@ -132,7 +133,7 @@ void SerialComTlt::moveMotAll(int pose){
 /*
 * Move Mot1 with input pose (ntick)
 */
-void SerialComTlt::moveMot1(int pose){
+void SerialComTlt::moveMot1Pose(int pose){
     vector<unsigned char> pose_hex = intToBytes(pose);
     unsigned char a = *(pose_hex.end()-4);
     unsigned char b = *(pose_hex.end()-3);
@@ -153,7 +154,7 @@ void SerialComTlt::moveMot1(int pose){
 /*
 * Move Mot2 with input pose (ntick)
 */
-void SerialComTlt::moveMot2(int pose){
+void SerialComTlt::moveMot2Pose(int pose){
     vector<unsigned char> pose_hex = intToBytes(pose);
     unsigned char a = *(pose_hex.end()-4);
     unsigned char b = *(pose_hex.end()-3);
@@ -182,32 +183,32 @@ void SerialComTlt::setColumnSize(double m){
     mot_ticks_ = (m *  METERS_TO_TICKS) + TICKS_OFFSET;  //  meters <-> ticks :  max 0.53 <-> 864 | min 0.0 <-> 10
     if(m <=0) mot_ticks_ = TICKS_OFFSET;  // min
     stop();
-    moveMot1(mot_ticks_);
-    moveMot2(mot_ticks_);
+    moveMot1Pose(mot_ticks_);
+    moveMot2Pose(mot_ticks_);
 
 }
 /*
 *  Move up both motors
 */
-void SerialComTlt::moveUp(){
-    moveMot1Up();
-    moveMot2Up();
+void SerialComTlt::moveUp(int speed){
+    moveMot1Up(speed);
+    moveMot2Up(speed);
 }
 
 /*
 *  Move down both motors 
 */
-void SerialComTlt::moveDown(){
-    moveMot1Down();
-    moveMot2Down();
+void SerialComTlt::moveDown(int speed){
+    moveMot1Down(speed);
+    moveMot2Down(speed);
 
 }
 /*
 *  Move up both motors during n seconds
 */
-void SerialComTlt::moveUp(int n){
-    moveMot1Up();
-    moveMot2Up();
+void SerialComTlt::moveUpN(int n){
+    moveMot1Up(100);
+    moveMot2Up(100);
     sleep(n);
     stop();
 }
@@ -215,29 +216,42 @@ void SerialComTlt::moveUp(int n){
 /*
 *  Move down both motors during n seconds
 */
-void SerialComTlt::moveDown(int n){
-    moveMot1Down();
-    moveMot2Down();
+void SerialComTlt::moveDownN(int n){
+    moveMot1Down(100);
+    moveMot2Down(100);
     sleep(n);
     stop();
 }
 
 
-void SerialComTlt::moveMot1Up(){
+void SerialComTlt::moveMot1Up(int speed){
+
     vector<unsigned char> params = {0x00, 0x02, 0xff}; 
     sendCmd("RE",&params);  // start moving
 }
-void SerialComTlt::moveMot2Up(){
+void SerialComTlt::moveMot2Up(int speed){
+
     vector<unsigned char> params = {0x01, 0x02, 0xff}; 
     sendCmd("RE",&params);  // start moving
 }
-void SerialComTlt::moveMot1Down(){
+void SerialComTlt::moveMot1Down(int speed){
+
     vector<unsigned char> params = {0x00, 0x01, 0xff}; 
     sendCmd("RE",&params);  // start moving
 }
-void SerialComTlt::moveMot2Down(){
+void SerialComTlt::moveMot2Down(int speed){
+
     vector<unsigned char> params = {0x01, 0x01, 0xff}; 
     sendCmd("RE",&params);  // start moving
+}
+
+void SerialComTlt::setLiftSpeed(int speed) {
+    if (abs(speed) > 100) speed = 100;
+    if (abs(speed) < 32) speed = 32;
+    vector<unsigned char> params = {0x04, 0x00,0x12,0x30,speed,0x00};
+    sendCmd("RT",&params);     
+    params = {0x04, 0x00,0x11,0x30,abs(speed),0x00};
+    sendCmd("RT",&params);    
 }
 
 void SerialComTlt::stop(){
@@ -266,7 +280,7 @@ double SerialComTlt::getColumnSize(){
 }
 
 double SerialComTlt::getColumnVelocity(double dt){
-    return (current_pose_ - previous_pose_) / dt;
+    return current_velocity_;
 }
 
 void SerialComTlt::getPoseM1(){
@@ -284,18 +298,25 @@ void SerialComTlt::getPoseM2(){
 */
 void SerialComTlt::comLoop(){
     vector<unsigned char> params = {0x01, 0x00, 0xff};
+    int speed_command;
+    auto last_time = std::chrono::steady_clock::now();
+    auto curr_time = std::chrono::steady_clock::now();
     while(run_){
         while(com_started_){
 
             sendCmd("RC",&params);
             getColumnSize();
+            speed_command = abs(Kp * (current_target_ - current_pose_));
+            setLiftSpeed(speed_command);
             if(current_target_ != last_target_ && !process_target_){
                 last_target_ = current_target_;
                 process_target_ = true;
                 if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
-                    moveUp();
+                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Speed Command: %d", speed_command);
+                    moveUp(speed_command);
                 } else if (current_target_ - current_pose_<= -LIFTKIT_SETPOINT_THRESHOLD) {
-                    moveDown();
+                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Speed Command: %d", speed_command);
+                    moveDown(speed_command);
                 } else {
                     process_target_ = false;
                     stop();
@@ -307,8 +328,13 @@ void SerialComTlt::comLoop(){
                 process_target_ = false;
                 stop();
             } 
+            // get period of cycle for velocity calculation
+            last_time = curr_time;
+            curr_time = std::chrono::steady_clock::now();
+            int64_t dt_read_ = std::chrono::duration_cast<std::chrono::nanoseconds> (curr_time - last_time).count();
 
-            usleep(10);
+            current_velocity_ = (current_pose_ - previous_pose_) / (static_cast<double>(dt_read_)/1.0e9);
+            usleep(100);
         }
         usleep(1);
     }

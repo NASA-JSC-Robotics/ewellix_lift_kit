@@ -1,19 +1,22 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import rclpy
 from rclpy.node import Node
 import sys
+from std_msgs.msg import String
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+import random
 
 class MinimalPublisher(Node):
 
-    def __init__(self, desired_position):
+    def __init__(self, desired_position, move_time):
         super().__init__('minimal_publisher')
         self.publisher_ = self.create_publisher(JointTrajectory, '/position_trajectory_controller/joint_trajectory', 10)
         timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.i = 0
         self.desired_position = desired_position
+        self.move_time = move_time
 
     def timer_callback(self):
         pass
@@ -32,7 +35,7 @@ class MinimalPublisher(Node):
         point.velocities = []
         point.accelerations = []
         point.effort = []
-        point.time_from_start.nanosec = 1000000
+        point.time_from_start.sec = self.move_time
 
         msg.points.append( point )
 
@@ -40,8 +43,8 @@ class MinimalPublisher(Node):
 
 def main(args):
     rclpy.init(args=args)
-    print(args[0])
-    minimal_publisher = MinimalPublisher(float(args[0]))
+    print(args[0], args[1])
+    minimal_publisher = MinimalPublisher(float(args[0]), int(args[1]))
 
     # rclpy.spin(minimal_publisher)
     minimal_publisher.pub_message()

@@ -38,10 +38,10 @@ class SerialComTlt
         bool startRs232Com();
         bool stopRs232Com();
 
-        void moveUp(int s);
-        void moveDown(int s);
-        void moveUp();
-        void moveDown();
+        void moveUpN(int s);
+        void moveDownN(int s);
+        void moveUp(int speed);
+        void moveDown(int speed);
         void stop();
         void setColumnSize(double m);
         double getColumnSize();
@@ -55,6 +55,7 @@ class SerialComTlt
         double height_limit_;
         double current_target_;
         double current_pose_;
+        double current_velocity_;
         double previous_pose_;
         bool go_up_;
         bool go_down_;
@@ -85,17 +86,18 @@ class SerialComTlt
         void getPoseM2();
 
         // Motors control with pose
-        void moveMot1(int);
-        void moveMot2(int);
+        void moveMot1Pose(int);
+        void moveMot2Pose(int);
         void moveMotAll(int);
         // Simple motors control
-        void moveMot1Up();
-        void moveMot2Up();
-        void moveMot1Down();
-        void moveMot2Down();
+        void moveMot1Up(int speed);
+        void moveMot2Up(int speed);
+        void moveMot1Down(int speed);
+        void moveMot2Down(int speed);
         void stopMot1();
         void stopMot2();
         void stopMotAll();
+        void setLiftSpeed(int speed);
 
         // For the Checksum
         unsigned short CRC_TABLE[256] = {
