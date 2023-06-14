@@ -103,6 +103,7 @@
       </collision>
     </link>
 
+    <!-- TODO Limit Upper Height -Mike -->
     <!--LOWER TO HIGHER (PRIS)-->
     <joint name="lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
@@ -122,7 +123,7 @@
       <mimic joint="lower_to_higher" multiplier="0.5" offset="0"/>
     </joint>
 
-    <!--TOP-->
+    <!--TOP (omit_plates=false)-->
     <xacro:if value="${not omit_plates}">
       <link name="${tf_prefix}ewellix_lift_top_link">
         <inertia>
@@ -143,7 +144,7 @@
       </link>
     </xacro:if>
 
-    <!--HIGHER TO TOP (FIXED)-->
+    <!--HIGHER TO TOP (FIXED, omit_plates=false)-->
     <xacro:if value="${not omit_plates}">
       <joint name="higher_to_top" type="fixed">
         <parent link="${tf_prefix}ewellix_lift_higher_link"/>
