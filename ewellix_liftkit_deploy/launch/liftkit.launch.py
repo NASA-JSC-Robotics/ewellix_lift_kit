@@ -117,14 +117,6 @@ def generate_launch_description():
                     controller_params_file]
     )
 
-    
-    position_trajectory_controller_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["position_trajectory_controller", "--controller-manager-timeout",
-                "100",],
-    )
-
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -148,9 +140,15 @@ def generate_launch_description():
     nodes = [
         robot_state_publisher,
         controller_manager,
-        position_trajectory_controller_spawner,
         joint_state_broadcaster_spawner, 
         rviz_node
     ]
 
-    return LaunchDescription(declared_arguments + nodes)
+    spawn_controllers_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ewellix_liftkit_deploy"), 'launch','spawn_controllers.launch.py')),
+        launch_arguments={
+            "use_fake_hardware": use_fake_hardware,
+        }.items(),
+    )
+
+    return LaunchDescription(declared_arguments + nodes + [spawn_controllers_launch])
