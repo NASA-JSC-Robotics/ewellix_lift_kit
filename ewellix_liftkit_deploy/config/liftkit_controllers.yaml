@@ -5,10 +5,10 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    position_trajectory_controller:
+    lift_position_trajectory_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
-position_trajectory_controller:
+lift_position_trajectory_controller:
   ros__parameters:
     joints:
       - ewellix_lift_lower_to_higher
