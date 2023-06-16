@@ -25,40 +25,35 @@ using namespace std;
 * Class representing Serial communication with the TLT Columns
 */
 
-
-
-
 class SerialComTlt
 {
     public:
         SerialComTlt();
         ~SerialComTlt();
-        bool startSerialCom(string port, int baud_rate);
 
+        // Communications
+        bool startSerialCom(string port, int baud_rate);
         bool startRs232Com();
         bool stopRs232Com();
 
-        void moveUpN(int s);
-        void moveDownN(int s);
-        void moveUp(int speed);
-        void moveDown(int speed);
+        // Commands
+        void moveUp();
+        void moveDown();
         void stop();
-        void setColumnSize(double m);
+        void setColumnSize(double height);
         double getColumnSize();
-        double getColumnVelocity(double dt);
+        double getColumnVelocity();
         
-
+        // Thread running control 
         void comLoop();
 
-
+        // Vars
         bool run_;
         double height_limit_;
         double current_target_;
         double current_pose_;
         double current_velocity_;
         double previous_pose_;
-        bool go_up_;
-        bool go_down_;
         serial::Serial serial_tlt_;
         bool debug_;
         bool stop_loop_;
@@ -68,12 +63,10 @@ class SerialComTlt
         double last_target_;
         int mot_ticks_;
         bool process_target_;
-        bool manual_target_;
         mutex lock_;
        
-
+        // Command and Data Handling 
         vector<unsigned char> intToBytes(int paramInt);
-        void thread_loop();
         unsigned short calculateChecksum (vector<unsigned char>*);
         bool sendCmd(string, vector<unsigned char>*);
         vector<unsigned char> feedback ();
@@ -81,19 +74,17 @@ class SerialComTlt
         bool checkResponseAck(vector<unsigned char>*);
         bool extractPose(vector<unsigned char>*,int);
 
-
+        // Get raw position values
         void getPoseM1();
         void getPoseM2();
 
-        // Motors control with pose
-        void moveMot1Pose(int);
-        void moveMot2Pose(int);
-        void moveMotAll(int);
         // Simple motors control
-        void moveMot1Up(int speed);
-        void moveMot2Up(int speed);
-        void moveMot1Down(int speed);
-        void moveMot2Down(int speed);
+        void moveMot1Up();
+        void moveMot2Up();
+        void moveMot1Down();
+        void moveMot2Down();
+        void moveMot1Pose(int pose);
+        void moveMot2Pose(int pose);
         void stopMot1();
         void stopMot2();
         void stopMotAll();

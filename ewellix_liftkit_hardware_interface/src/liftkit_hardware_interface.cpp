@@ -139,7 +139,7 @@ namespace liftkit_hardware_interface
     hardware_interface::return_type LiftkitHardwareInterface::read(const rclcpp::Time &time, const rclcpp::Duration &period)
     {
         previous_position_ = hw_states_positions_[0];
-        hw_states_positions_[0] = double(srl_.mot1_pose_ + srl_.mot2_pose_- 20)*0.000310304;
+        hw_states_positions_[0] = srl_.current_pose_;
         hw_states_velocities_[0] = srl_.current_velocity_;
         hw_states_robot_ready_[0] = 1.0;
       
