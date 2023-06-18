@@ -105,7 +105,7 @@
 
     <!-- TODO Limit Upper Height -Mike -->
     <!--LOWER TO HIGHER (PRIS)-->
-    <joint name="lower_to_higher" type="prismatic">
+    <joint name="ewellix_lift_lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
       <child link="${tf_prefix}ewellix_lift_higher_link"/>
       <origin xyz="0 0 0.0454" rpy="0 0 0"/>
@@ -120,7 +120,7 @@
       <origin xyz="0 0 -0.0222" rpy="0 0 0"/>
       <axis xyz="0 0 -1"/>
       <limit lower="0" upper="0.351" effort="1000" velocity="1"/>
-      <mimic joint="lower_to_higher" multiplier="0.5" offset="0"/>
+      <mimic joint="ewellix_lift_lower_to_higher" multiplier="0.5" offset="0"/>
     </joint>
 
     <!--TOP (omit_plates=false)-->
