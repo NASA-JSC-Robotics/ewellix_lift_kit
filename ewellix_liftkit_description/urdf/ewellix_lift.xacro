@@ -7,15 +7,30 @@
 
   <xacro:macro name="ewellix_lift" params="
     name
-    tf_prefix
-    parent
+    tf_prefix:=''
+    parent:=world
     height_limit:=0.7
     omit_plates:=false
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
+    *origin
   ">
     <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts-->
     
+    <xacro:if value="${not omit_plates}">
+      <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_base_link"/>
+    </xacro:if>
+    
+    <xacro:unless value="${not omit_plates}">
+      <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_lower_link"/>
+    </xacro:unless>
+
+    <joint name="${tf_prefix}ewellix_lift_base_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${lift_base_link_name}"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+
     <!--BASE (omit_plates=false)-->
     <xacro:if value="${not omit_plates}">
       <link name="${tf_prefix}ewellix_lift_base_link">
