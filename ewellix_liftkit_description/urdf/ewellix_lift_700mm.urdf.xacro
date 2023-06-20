@@ -9,6 +9,8 @@
   <xacro:arg name="use_fake_hardware" default="false" />
   <xacro:arg name="com_port" default="/dev/ttyUSB0" />
 
+  <link name="world"/>
+
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
   <xacro:ewellix_lift
     name="$(arg name)"
