@@ -60,7 +60,7 @@
       </inertia>
       <visual>
         <geometry>
-          <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_low.dae"/>
+          <mesh filename= "package://ewellix_liftkit_description/meshes/visual/lift_low.dae"/>
         </geometry>
         <material name="gray"/>
       </visual>
@@ -88,7 +88,7 @@
       </inertia>
       <visual>
         <geometry>
-          <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_mid.dae"/>
+          <mesh filename= "package://ewellix_liftkit_description/meshes/visual/lift_mid.dae"/>
         </geometry>
         <material name="gray"/>
       </visual>
@@ -107,7 +107,7 @@
       </inertia>
       <visual>
         <geometry>
-          <mesh filename= "file://$(find ewellix_liftkit_description)/meshes/visual/lift_high.dae"/>
+          <mesh filename= "package://ewellix_liftkit_description/meshes/visual/lift_high.dae"/>
         </geometry>
         <material name="gray"/>
       </visual>
