@@ -3,8 +3,6 @@
 
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
-
   <xacro:macro name="ewellix_lift" params="
     name
     tf_prefix:=''
