@@ -66,7 +66,7 @@
       </visual>
       <collision>
         <geometry>
-          <box size="0.163 0.163 0.480"/>
+          <box size="0.163 0.163 0.575"/>
         </geometry>
       </collision>
     </link>
@@ -76,7 +76,7 @@
       <joint name="base_to_lower" type="fixed">
         <parent link="${tf_prefix}ewellix_lift_base_link"/>
         <child link="${tf_prefix}ewellix_lift_lower_link"/>
-        <origin xyz="0 0 0.2475" rpy="0 0 0"/>
+        <origin xyz="0 0 0.295" rpy="0 0 0"/>
       </joint>
     </xacro:if>
 
@@ -123,7 +123,7 @@
     <joint name="ewellix_lift_lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
       <child link="${tf_prefix}ewellix_lift_higher_link"/>
-      <origin xyz="0 0 0.0454" rpy="0 0 0"/>
+      <origin xyz="0 0 0.0915" rpy="0 0 0"/>
       <axis xyz="0 0 1"/>
       <limit lower="0" upper="${height_limit}" effort="1000" velocity="1"/>
     </joint>
@@ -132,7 +132,7 @@
     <joint name="middle_mimic_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_higher_link"/>
       <child link="${tf_prefix}ewellix_lift_middle_link"/>
-      <origin xyz="0 0 -0.0222" rpy="0 0 0"/>
+      <origin xyz="0 0 -0.03397" rpy="0 0 0"/>
       <axis xyz="0 0 -1"/>
       <limit lower="0" upper="0.351" effort="1000" velocity="1"/>
       <mimic joint="ewellix_lift_lower_to_higher" multiplier="0.5" offset="0"/>
