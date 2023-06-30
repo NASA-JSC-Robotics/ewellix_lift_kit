@@ -12,6 +12,7 @@
   <link name="world"/>
 
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
+  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
   <xacro:ewellix_lift
     name="$(arg name)"
     tf_prefix="$(arg tf_prefix)"
