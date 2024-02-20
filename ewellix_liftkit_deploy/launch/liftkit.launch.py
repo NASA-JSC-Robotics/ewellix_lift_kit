@@ -120,8 +120,10 @@ def generate_launch_description():
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "--controller-manager-timeout",
-                "100",],
+        arguments=["joint_state_broadcaster",
+                   "-c", "controller_manager",
+                   "--controller-manager-timeout", "100",
+                   ],
     )
 
     rviz_config_file = PathJoinSubstitution(

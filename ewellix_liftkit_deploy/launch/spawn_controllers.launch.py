@@ -25,7 +25,8 @@ def generate_launch_description():
                    "--controller-manager-timeout", "100",
                    "-c", "controller_manager",
                    "-t", "joint_trajectory_controller/JointTrajectoryController",
-                   "-p", controller_params_file],
+                   "-p", controller_params_file
+                   ],
     )
 
     nodes = [position_trajectory_controller_spawner]
