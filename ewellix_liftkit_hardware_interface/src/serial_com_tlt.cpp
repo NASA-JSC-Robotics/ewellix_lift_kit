@@ -27,7 +27,7 @@ SerialComTlt::SerialComTlt(){
     debug_ = false;
     stop_loop_ = false;
     com_started_ = false;
-    process_target_ = false;
+    already_has_goal_ = false;
     mot1_pose_ = 0;
     mot2_pose_ = 0;
     mot_ticks_ = 0;
@@ -37,6 +37,9 @@ SerialComTlt::SerialComTlt(){
     current_pose_ = 0.0;
     current_target_ = 0.0;
     height_limit_ = 0.7;
+
+    curr_dir = MOVING_STOPPED;
+    last_dir = MOVING_STOPPED;
 }
 
 
@@ -316,6 +319,10 @@ void SerialComTlt::comLoop(){
     int speed_command;
     auto last_time = std::chrono::steady_clock::now();
     auto curr_time = std::chrono::steady_clock::now();
+
+    // if we change directions too fast, the liftkit may not respond. So we have to wait for 
+    // cycles_to_wait before sending a new command
+    static int num_cycles_waited = 0;
     while(run_){
         while(com_started_){
 
@@ -323,26 +330,42 @@ void SerialComTlt::comLoop(){
             getColumnSize();
             speed_command = abs(Kp * (current_target_ - current_pose_));
             setLiftSpeed(speed_command);
-            if(current_target_ != last_target_ && !process_target_){
-                last_target_ = current_target_;
-                process_target_ = true;
+            // if we detect a change in target and we are currently looking for a target, set to move either up or down
+            if(current_target_ != last_target_ && !already_has_goal_ && (num_cycles_waited++ == cycles_to_wait)){
+                already_has_goal_ = true;
                 if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
+                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "cmd up");
                     moveUp();
                 } else if (current_target_ - current_pose_<= -LIFTKIT_SETPOINT_THRESHOLD) {
+                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "cmd down");
                     moveDown();
                 } else {
-                    process_target_ = false;
+                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "cmd stop");
+                    already_has_goal_ = false;
                     stop();
                 }
-
+                num_cycles_waited = 0;
             } 
             
-            if (abs(current_pose_ - current_target_) <= LIFTKIT_SETPOINT_THRESHOLD) {
-                process_target_ = false;
+            // get the current direction we are moving. Ignore stop because we just care about change in up->down
+            if (last_target_ > current_target_)      curr_dir = MOVING_DOWN;
+            else if (last_target_ < current_target_) curr_dir = MOVING_UP;
+            
+            // if we detected a change in goal direction, or we have reached our goal, we need to stop, 
+            // and start looking for our new goal
+            if ((abs(current_pose_ - current_target_) <= LIFTKIT_SETPOINT_THRESHOLD) ||
+                ((curr_dir != last_dir)))
+            {
+                already_has_goal_ = false;
                 stop();
             } 
-            // get period of cycle for velocity calculation
+
+            last_dir=curr_dir;
+            // if (curr_dir != MOVING_STOPPED) last_moving_dir=curr_moving_dir;
+            last_target_ = current_target_;
             last_time = curr_time;
+
+            // get period of cycle for velocity calculation
             curr_time = std::chrono::steady_clock::now();
             int64_t dt_read_ = std::chrono::duration_cast<std::chrono::nanoseconds> (curr_time - last_time).count();
 

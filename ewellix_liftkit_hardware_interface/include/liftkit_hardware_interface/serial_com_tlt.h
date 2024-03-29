@@ -27,6 +27,13 @@ using namespace std;
 
 class SerialComTlt
 {
+    private:
+        enum DIR{
+            MOVING_UP,
+            MOVING_DOWN,
+            MOVING_STOPPED
+        };
+
     public:
         SerialComTlt();
         ~SerialComTlt();
@@ -62,8 +69,13 @@ class SerialComTlt
         int mot2_pose_;
         double last_target_;
         int mot_ticks_;
-        bool process_target_;
+        bool already_has_goal_;
         mutex lock_;
+
+        DIR curr_dir = DIR::MOVING_STOPPED;
+        DIR last_dir = DIR::MOVING_STOPPED;
+
+        int cycles_to_wait = 2;
        
         // Command and Data Handling 
         vector<unsigned char> intToBytes(int paramInt);
