@@ -334,13 +334,10 @@ void SerialComTlt::comLoop(){
             if(current_target_ != last_target_ && !already_has_goal_ && (num_cycles_waited++ == cycles_to_wait)){
                 already_has_goal_ = true;
                 if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
-                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "cmd up");
                     moveUp();
                 } else if (current_target_ - current_pose_<= -LIFTKIT_SETPOINT_THRESHOLD) {
-                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "cmd down");
                     moveDown();
                 } else {
-                    RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "cmd stop");
                     already_has_goal_ = false;
                     stop();
                 }
