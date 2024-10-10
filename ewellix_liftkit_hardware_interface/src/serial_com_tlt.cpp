@@ -67,7 +67,7 @@ bool SerialComTlt::startSerialCom(string port, int baud_rate){
         RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::startSerialCom - COM OPEN !");
         return true;
     }
-    catch (serial::IOException e){
+    catch (serial::IOException& e){
         RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::startSerialCom - serial::IOException: %s", e.what());
         return false;
     }
@@ -413,7 +413,7 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
             serial_tlt_.flush();
             stop_loop_= false;
         }
-        catch (serial::IOException e){
+        catch (serial::IOException& e){
             RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Output Cmd: %s", e.what());
         }
     }
