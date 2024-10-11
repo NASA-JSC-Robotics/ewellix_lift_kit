@@ -3,9 +3,7 @@
 import rclpy
 from rclpy.node import Node
 import sys
-from std_msgs.msg import String
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-import random
 
 
 class MinimalPublisher(Node):

@@ -1,9 +1,5 @@
-import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 
 
@@ -18,9 +14,9 @@ def generate_launch_description():
         )
     )
 
-    controller_params_file = os.path.join(
-        get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
-    )
+    # controller_params_file = os.path.join(
+    #     get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
+    # )
     position_trajectory_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
