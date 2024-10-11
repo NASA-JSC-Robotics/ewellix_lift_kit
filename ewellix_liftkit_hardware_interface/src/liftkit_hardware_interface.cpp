@@ -105,14 +105,14 @@ namespace liftkit_hardware_interface
             if(srl_.startSerialCom(port,38400))
             {
                 com_thread_ = thread(&SerialComTlt::comLoop,&srl_); //  RC thread
-                if(srl_.startRs232Com()) 
+                if(srl_.startRs232Com())
                 {        // Com started
                     RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully connected!");
                 } else {
                     RCLCPP_FATAL(
                         rclcpp::get_logger("LiftkitHardwareInterface"),
                         "Is the Liftkit USB Connected?");
-                    return CallbackReturn::ERROR;                
+                    return CallbackReturn::ERROR;
                 }
             }
         }

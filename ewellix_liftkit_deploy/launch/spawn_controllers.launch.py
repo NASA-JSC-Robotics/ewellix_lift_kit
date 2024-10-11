@@ -6,6 +6,7 @@ from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 
+
 def generate_launch_description():
 
     declared_arguments = []
@@ -17,16 +18,22 @@ def generate_launch_description():
         )
     )
 
-    controller_params_file = os.path.join(get_package_share_directory('ewellix_liftkit_deploy'),'config','liftkit_controllers.yaml')
+    controller_params_file = os.path.join(
+        get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
+    )
     position_trajectory_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["lift_position_trajectory_controller", 
-                   "--controller-manager-timeout", "100",
-                   "-c", "controller_manager",
-                   "-t", "joint_trajectory_controller/JointTrajectoryController",
-                #    "-p", controller_params_file
-                   ],
+        arguments=[
+            "lift_position_trajectory_controller",
+            "--controller-manager-timeout",
+            "100",
+            "-c",
+            "controller_manager",
+            "-t",
+            "joint_trajectory_controller/JointTrajectoryController",
+            #    "-p", controller_params_file
+        ],
     )
 
     nodes = [position_trajectory_controller_spawner]

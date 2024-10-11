@@ -14,11 +14,11 @@
     *origin
   ">
     <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts-->
-    
+
     <xacro:if value="${not omit_plates}">
       <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_base_link"/>
     </xacro:if>
-    
+
     <xacro:unless value="${not omit_plates}">
       <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_lower_link"/>
     </xacro:unless>
@@ -68,7 +68,7 @@
         </geometry>
       </collision>
     </link>
-    
+
     <!--BASE TO LOWER (FIXED, omit_plates=false)-->
     <xacro:if value="${not omit_plates}">
       <joint name="base_to_lower" type="fixed">
@@ -185,5 +185,5 @@
 
 
   </xacro:macro>
-  
+
 </robot>

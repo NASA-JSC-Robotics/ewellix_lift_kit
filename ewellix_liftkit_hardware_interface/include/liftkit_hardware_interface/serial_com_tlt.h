@@ -50,8 +50,8 @@ class SerialComTlt
         void setColumnSize(double height);
         double getColumnSize();
         double getColumnVelocity();
-        
-        // Thread running control 
+
+        // Thread running control
         void comLoop();
 
         // Vars
@@ -76,8 +76,8 @@ class SerialComTlt
         DIR last_dir = DIR::MOVING_STOPPED;
 
         int cycles_to_wait = 2;
-       
-        // Command and Data Handling 
+
+        // Command and Data Handling
         vector<unsigned char> intToBytes(int paramInt);
         unsigned short calculateChecksum (vector<unsigned char>*);
         bool sendCmd(string, vector<unsigned char>*);

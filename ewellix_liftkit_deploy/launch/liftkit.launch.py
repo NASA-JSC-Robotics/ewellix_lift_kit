@@ -19,6 +19,8 @@ from launch_ros.descriptions import ParameterValue
 import xacro
 
 from launch_ros.actions import Node
+
+
 def generate_launch_description():
     declared_arguments = []
     # xacro args
@@ -65,7 +67,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "rviz",
-            default_value='true',
+            default_value="true",
             description="launch rviz",
         )
     )
@@ -80,8 +82,10 @@ def generate_launch_description():
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift_700mm.urdf.xacro"]),
-            " ", 
+            PathJoinSubstitution(
+                [FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift_700mm.urdf.xacro"]
+            ),
+            " ",
             "name:=",
             robot_name,
             " ",
@@ -100,35 +104,37 @@ def generate_launch_description():
         ]
     )
     robot_description = {"robot_description": robot_description_content}
-    
+
     robot_state_publisher = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        output='screen',
-        parameters=[robot_description]
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        output="screen",
+        parameters=[robot_description],
     )
 
-    controller_params_file = os.path.join(get_package_share_directory('ewellix_liftkit_deploy'),'config','liftkit_controllers.yaml')
+    controller_params_file = os.path.join(
+        get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
+    )
 
     controller_manager = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[robot_description,
-                    controller_params_file]
+        parameters=[robot_description, controller_params_file],
     )
 
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster",
-                   "-c", "controller_manager",
-                   "--controller-manager-timeout", "100",
-                   ],
+        arguments=[
+            "joint_state_broadcaster",
+            "-c",
+            "controller_manager",
+            "--controller-manager-timeout",
+            "100",
+        ],
     )
 
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("ewellix_liftkit_deploy"), "rviz", "view_robot.rviz"]
-    )
+    rviz_config_file = PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "rviz", "view_robot.rviz"])
 
     rviz_node = Node(
         package="rviz2",
@@ -136,18 +142,15 @@ def generate_launch_description():
         name="rviz2",
         output="log",
         arguments=["-d", rviz_config_file],
-        condition=IfCondition(rviz)
+        condition=IfCondition(rviz),
     )
 
-    nodes = [
-        robot_state_publisher,
-        controller_manager,
-        joint_state_broadcaster_spawner, 
-        rviz_node
-    ]
+    nodes = [robot_state_publisher, controller_manager, joint_state_broadcaster_spawner, rviz_node]
 
     spawn_controllers_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ewellix_liftkit_deploy"), 'launch','spawn_controllers.launch.py')),
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory("ewellix_liftkit_deploy"), "launch", "spawn_controllers.launch.py")
+        ),
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,
         }.items(),
