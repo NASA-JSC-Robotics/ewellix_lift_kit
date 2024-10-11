@@ -67,6 +67,9 @@ repos:
     rev: v19.1.1
     hooks:
       - id: clang-format
+        files: \.(c|cc|cxx|cpp|frag|glsl|h|hpp|hxx|ih|ispc|ipp|java|m|proto|vert)$
+
+  # TODO: Add ament checks
 
   # Spellcheck in comments and docs
   - repo: https://github.com/codespell-project/codespell
