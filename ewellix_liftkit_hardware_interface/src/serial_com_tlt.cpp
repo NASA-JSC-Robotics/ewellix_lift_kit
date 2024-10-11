@@ -67,7 +67,7 @@ bool SerialComTlt::startSerialCom(string port, int baud_rate){
         RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::startSerialCom - COM OPEN !");
         return true;
     }
-    catch (serial::IOException e){
+    catch (serial::IOException& e){
         RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::startSerialCom - serial::IOException: %s", e.what());
         return false;
     }
@@ -234,13 +234,16 @@ void SerialComTlt::setLiftSpeed(int speed) {
     if (abs(speed) > SPEED_HIGH_LIMIT) speed = SPEED_HIGH_LIMIT;
     // Clamp min speed command
     if (abs(speed) < SPEED_LOW_LIMIT) speed = SPEED_LOW_LIMIT;
+
+    // Explicity convert speed for the command interface
+    auto speed_param = static_cast<unsigned char>(abs(speed));
     
     // Set MOT1 speed
-    vector<unsigned char> params = {SPEED_CMD, SPEED_UNUSED, MOT1_ADDR, REMOTE_DATA_ITEM, abs(speed), SPEED_UNUSED};
+    vector<unsigned char> params = {SPEED_CMD, SPEED_UNUSED, MOT1_ADDR, REMOTE_DATA_ITEM, speed_param, SPEED_UNUSED};
     sendCmd("RT",&params);    
 
     // Set MOT2 speed
-    params = {SPEED_CMD, SPEED_UNUSED, MOT2_ADDR, REMOTE_DATA_ITEM, abs(speed), SPEED_UNUSED};
+    params = {SPEED_CMD, SPEED_UNUSED, MOT2_ADDR, REMOTE_DATA_ITEM, speed_param, SPEED_UNUSED};
     sendCmd("RT",&params); 
 }
 
@@ -413,7 +416,7 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param){
             serial_tlt_.flush();
             stop_loop_= false;
         }
-        catch (serial::IOException e){
+        catch (serial::IOException& e){
             RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Output Cmd: %s", e.what());
         }
     }

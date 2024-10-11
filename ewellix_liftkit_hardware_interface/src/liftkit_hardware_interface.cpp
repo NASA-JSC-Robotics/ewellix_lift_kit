@@ -138,11 +138,24 @@ namespace liftkit_hardware_interface
 
     hardware_interface::return_type LiftkitHardwareInterface::read(const rclcpp::Time &time, const rclcpp::Duration &period)
     {
+        // Address compiler warnings.
+        (void) time;
+        (void) period;
+
         previous_position_ = hw_states_positions_[0];
-        hw_states_positions_[0] = srl_.current_pose_;
         hw_states_velocities_[0] = srl_.current_velocity_;
         hw_states_robot_ready_[0] = 1.0;
-      
+
+        // There is an issue when homing the robot that causes the position to read as an epsilon less than 0 (e.g. -0.001),
+        // violating joint limits. If that is the case we simply round the pose to 0 from the HW interface. Otherwise,
+        // something may be more seriously wrong so we report the value from the serial comms.
+        auto pos = srl_.current_pose_;
+        if (pos < 0 && pos > -0.01)
+        {
+            pos = 0.0;
+        }
+        hw_states_positions_[0] = pos;
+
         RCLCPP_DEBUG(
             rclcpp::get_logger("LiftkitHardwareInterface"),
             "Reading positions: %f",
@@ -156,6 +169,10 @@ namespace liftkit_hardware_interface
 
     hardware_interface::return_type LiftkitHardwareInterface::write(const rclcpp::Time &time, const rclcpp::Duration &period)
     {
+        // Address compiler warnings.
+        (void) time;
+        (void) period;
+
         static bool warned_ = false;
         if (hw_commands_positions_[0] > height_limit) {
             srl_.current_target_ = height_limit;
