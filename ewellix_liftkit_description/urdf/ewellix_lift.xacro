@@ -117,7 +117,7 @@
     </link>
 
     <!-- TODO Limit Upper Height -Mike -->
-    <!--LOWER TO HIGHER (PRIS)-->
+    <!--LOWER TO HIGHER (PRISMATIC)-->
     <joint name="ewellix_lift_lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
       <child link="${tf_prefix}ewellix_lift_higher_link"/>
@@ -126,7 +126,7 @@
       <limit lower="0" upper="${height_limit}" effort="1000" velocity="1"/>
     </joint>
 
-    <!--MIDDLE MIMIC HIGHER (PRIS MIMIC)-->
+    <!--MIDDLE MIMIC HIGHER (PRISMATIC MIMIC)-->
     <joint name="middle_mimic_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_higher_link"/>
       <child link="${tf_prefix}ewellix_lift_middle_link"/>

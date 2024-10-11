@@ -51,7 +51,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "height_limit",
             default_value="0.7",
-            description="Maximium height in meters for the lift",
+            description="Maximum height in meters for the lift",
         )
     )
 
