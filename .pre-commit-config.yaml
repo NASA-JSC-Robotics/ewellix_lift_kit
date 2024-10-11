@@ -69,7 +69,6 @@ repos:
       - id: clang-format
 
   # Spellcheck in comments and docs
-  # skipping of *.svg files is not working...
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:

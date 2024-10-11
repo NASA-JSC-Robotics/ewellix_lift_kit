@@ -1,0 +1,11 @@
+stages:
+  - lint
+
+pre-commit-check:
+  stage: lint
+  image: python:3.10
+  before_script:
+    - pip install pre-commit
+  script:
+    - pre-commit install --install-hooks
+    - pre-commit run --all-files
