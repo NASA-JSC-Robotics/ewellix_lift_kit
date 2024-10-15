@@ -69,7 +69,7 @@ repos:
       - id: clang-format
         files: \.(c|cc|cxx|cpp|frag|glsl|h|hpp|hxx|ih|ispc|ipp|java|m|proto|vert)$
 
-  # TODO: Add ament checks
+  # TODO: Add ament checks for ROS packages, if required
 
   # Spellcheck in comments and docs
   - repo: https://github.com/codespell-project/codespell
