@@ -9,3 +9,9 @@ pre-commit-check:
   script:
     - pre-commit install --install-hooks
     - pre-commit run --all-files
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "humble" || $CI_COMMIT_BRANCH == "jazzy" || $CI_COMMIT_BRANCH =~ /.*-devel$/'
+      when: always
+    - when: never
