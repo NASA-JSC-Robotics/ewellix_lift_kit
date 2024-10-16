@@ -14,11 +14,11 @@
     *origin
   ">
     <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts-->
-    
+
     <xacro:if value="${not omit_plates}">
       <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_base_link"/>
     </xacro:if>
-    
+
     <xacro:unless value="${not omit_plates}">
       <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_lower_link"/>
     </xacro:unless>
@@ -68,7 +68,7 @@
         </geometry>
       </collision>
     </link>
-    
+
     <!--BASE TO LOWER (FIXED, omit_plates=false)-->
     <xacro:if value="${not omit_plates}">
       <joint name="base_to_lower" type="fixed">
@@ -117,7 +117,7 @@
     </link>
 
     <!-- TODO Limit Upper Height -Mike -->
-    <!--LOWER TO HIGHER (PRIS)-->
+    <!--LOWER TO HIGHER (PRISMATIC)-->
     <joint name="ewellix_lift_lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
       <child link="${tf_prefix}ewellix_lift_higher_link"/>
@@ -126,7 +126,7 @@
       <limit lower="0" upper="${height_limit}" effort="1000" velocity="1"/>
     </joint>
 
-    <!--MIDDLE MIMIC HIGHER (PRIS MIMIC)-->
+    <!--MIDDLE MIMIC HIGHER (PRISMATIC MIMIC)-->
     <joint name="middle_mimic_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_higher_link"/>
       <child link="${tf_prefix}ewellix_lift_middle_link"/>
@@ -185,5 +185,5 @@
 
 
   </xacro:macro>
-  
+
 </robot>

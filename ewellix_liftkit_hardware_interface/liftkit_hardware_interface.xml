@@ -4,7 +4,7 @@
             type="liftkit_hardware_interface::LiftkitHardwareInterface"
             base_class_type="hardware_interface::ActuatorInterface">
         <description>
-        The ros2_control for the Ewellix liftkit Robot. 
+        The ros2_control for the Ewellix liftkit Robot.
         </description>
     </class>
 

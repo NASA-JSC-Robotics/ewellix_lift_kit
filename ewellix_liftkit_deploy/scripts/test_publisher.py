@@ -3,15 +3,14 @@
 import rclpy
 from rclpy.node import Node
 import sys
-from std_msgs.msg import String
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-import random
+
 
 class MinimalPublisher(Node):
 
     def __init__(self, desired_position, move_time):
-        super().__init__('minimal_publisher')
-        self.publisher_ = self.create_publisher(JointTrajectory, '/position_trajectory_controller/joint_trajectory', 10)
+        super().__init__("minimal_publisher")
+        self.publisher_ = self.create_publisher(JointTrajectory, "/position_trajectory_controller/joint_trajectory", 10)
         timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.i = 0
@@ -25,8 +24,8 @@ class MinimalPublisher(Node):
         msg = JointTrajectory()
 
         msg.header.stamp = self.get_clock().now().to_msg()
-        msg.header.frame_id = ''
-        msg.joint_names = ['ewellix_lift_lower_to_higher']
+        msg.header.frame_id = ""
+        msg.joint_names = ["ewellix_lift_lower_to_higher"]
 
         point = JointTrajectoryPoint()
         j1 = self.desired_position
@@ -37,9 +36,10 @@ class MinimalPublisher(Node):
         point.effort = []
         point.time_from_start.sec = self.move_time
 
-        msg.points.append( point )
+        msg.points.append(point)
 
         self.publisher_.publish(msg)
+
 
 def main(args):
     rclpy.init(args=args)
@@ -56,5 +56,5 @@ def main(args):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
