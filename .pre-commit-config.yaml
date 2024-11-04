@@ -36,6 +36,8 @@ repos:
     rev: v0.42.0
     hooks:
       - id: markdownlint
+        # Disable max line length check for markdown
+        args: ["--disable", "~MD013"]
 
   # shellcheck hook
   - repo: https://github.com/koalaman/shellcheck-precommit
