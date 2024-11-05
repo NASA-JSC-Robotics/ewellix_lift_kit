@@ -26,7 +26,6 @@ CallbackReturn LiftkitHardwareInterface::on_init(
     return CallbackReturn::ERROR;
   }
 
-  // TODO: check for the right number of joints
   hw_states_positions_.resize(info_.joints.size(),
                               numeric_limits<double>::quiet_NaN());
   hw_states_velocities_.resize(info_.joints.size(),

@@ -49,9 +49,9 @@ public:
   void comLoop();
 
   // Vars
-  bool run_;
-  double height_limit_;
-  double current_target_;
+  bool run_; // variable for hwi to set for when it wants us to run loops
+  double height_limit_;   // height limit for stack, set in hwi params
+  double current_target_; //
   double current_pose_;
   double current_velocity_;
   double previous_pose_;
@@ -69,6 +69,8 @@ public:
   DIR curr_dir = DIR::MOVING_STOPPED;
   DIR last_dir = DIR::MOVING_STOPPED;
 
+  // number of cycles to wait before changing directions. If you switch
+  // directions to quickly, it will not update properly
   int cycles_to_wait = 2;
 
   // Command and Data Handling
@@ -80,20 +82,30 @@ public:
   bool checkResponseAck(vector<unsigned char> *);
   bool extractPose(vector<unsigned char> *, int);
 
-  // Get raw position values
+  /// Get raw position value for motor 1
   void getPoseM1();
+  /// Get raw position value for motor 2
   void getPoseM2();
 
-  // Simple motors control
+  /// set motor 1 to direction up
   void moveMot1Up();
+  /// set motor 2 to direction up
   void moveMot2Up();
+  /// set motor 1 to direction down
   void moveMot1Down();
+  /// set motor 2 to direction down
   void moveMot2Down();
+  /// move motor 1 to a desired pose
   void moveMot1Pose(int pose);
+  /// move motor 2 to a desired pose
   void moveMot2Pose(int pose);
+  /// stop motor 1
   void stopMot1();
+  /// stop motor 2
   void stopMot2();
+  /// stop both motors
   void stopMotAll();
+  /// set the speed of both motors
   void setLiftSpeed(int speed);
 
   // For the Checksum

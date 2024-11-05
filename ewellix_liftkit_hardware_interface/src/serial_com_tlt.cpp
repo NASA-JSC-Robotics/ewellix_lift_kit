@@ -2,25 +2,35 @@
 #include "rclcpp/macros.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-const double LIFTKIT_SETPOINT_THRESHOLD = 0.011;
-const double METERS_TO_TICKS = 1611.320754717;
-const double TICKS_TO_METERS = 0.000310304;
-const int TICKS_OFFSET = 10;
-const int MOT1 = 0x00;
-const int MOT2 = 0x01;
-const int MOT1_ADDR = 0x11;
-const int MOT2_ADDR = 0x12;
-const int MOT_ALL = 0x07;
-const int UP = 0x02;
-const int DOWN = 0x01;
-const int UNUSED = 0Xff;
-const int SPEED_CMD = 0x04;
-const int SPEED_UNUSED = 0x00;
-const int REMOTE_DATA_ITEM = 0x30;
-const int OPEN_COMM = 0x01;
-const int SPEED_HIGH_LIMIT = 100; // As percentage of 100
-const int SPEED_LOW_LIMIT = 32;   // As percentage of 100
-const int Kp = 1000;
+// error from desired under which we do not command the liftkit
+// to move
+constexpr double LIFTKIT_SETPOINT_THRESHOLD = 0.011;
+
+// conversion values
+constexpr double METERS_TO_TICKS = 1611.320754717;
+constexpr double TICKS_TO_METERS = 0.000310304;
+
+// offset value to
+constexpr int TICKS_OFFSET = 10;
+
+// hex values for ewellix specific params
+constexpr int MOT1 = 0x00;
+constexpr int MOT2 = 0x01;
+constexpr int MOT1_ADDR = 0x11;
+constexpr int MOT2_ADDR = 0x12;
+constexpr int MOT_ALL = 0x07;
+constexpr int UP = 0x02;
+constexpr int DOWN = 0x01;
+constexpr int UNUSED = 0Xff;
+constexpr int SPEED_CMD = 0x04;
+constexpr int SPEED_UNUSED = 0x00;
+constexpr int REMOTE_DATA_ITEM = 0x30;
+constexpr int OPEN_COMM = 0x01;
+
+//
+constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
+constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
+constexpr int Kp = 1000;
 
 SerialComTlt::SerialComTlt() {
   run_ = true;
@@ -75,9 +85,7 @@ bool SerialComTlt::startSerialCom(string port, int baud_rate) {
   }
 }
 
-/*
- * Activate the remote function
- */
+/// Activate the remote function
 bool SerialComTlt::startRs232Com() {
 
   vector<unsigned char> params = {OPEN_COMM};
@@ -93,6 +101,7 @@ bool SerialComTlt::startRs232Com() {
                                     0xff}; // Start cyclic communications
     sendCmd("RC", &params);
     getColumnSize();
+    // send the lift to the home position
     setColumnSize(0.0);
     return true;
   } else {
@@ -100,9 +109,7 @@ bool SerialComTlt::startRs232Com() {
   }
 }
 
-/*
- * Deactivate the remote function
- */
+/// Deactivate the remote function
 bool SerialComTlt::stopRs232Com() {
   com_started_ = false;
   usleep(100);
@@ -118,9 +125,7 @@ bool SerialComTlt::stopRs232Com() {
   }
 }
 
-/*
- * Move Mot1 with input pose (ntick)
- */
+/// Move Mot1 with input pose (ntick)
 void SerialComTlt::moveMot1Pose(int pose) {
   vector<unsigned char> pose_hex = intToBytes(pose);
   unsigned char a = *(pose_hex.end() - 4);
@@ -137,9 +142,7 @@ void SerialComTlt::moveMot1Pose(int pose) {
   sendCmd("RE", &params); // move
 }
 
-/*
- * Move Mot2 with input pose (ntick)
- */
+/// Move Mot2 with input pose (ntick)
 void SerialComTlt::moveMot2Pose(int pose) {
   vector<unsigned char> pose_hex = intToBytes(pose);
   unsigned char a = *(pose_hex.end() - 4);
@@ -157,9 +160,7 @@ void SerialComTlt::moveMot2Pose(int pose) {
   sendCmd("RE", &params); // move
 }
 
-/*
- * Control the column size
- */
+/// Control the column size
 void SerialComTlt::setColumnSize(double height) {
   if (height > height_limit_) {
     height = height_limit_;
@@ -176,58 +177,44 @@ void SerialComTlt::setColumnSize(double height) {
   moveMot2Pose(mot_ticks_);
 }
 
-/*
- *  Move up both motors
- */
+///  Move up both motors
 void SerialComTlt::moveUp() {
   moveMot1Up();
   moveMot2Up();
 }
 
-/*
- *  Move down both motors
- */
+///  Move down both motors
 void SerialComTlt::moveDown() {
   moveMot1Down();
   moveMot2Down();
 }
 
-/*
- *  Move up Mot1
- */
+///  Move up Mot1
 void SerialComTlt::moveMot1Up() {
   vector<unsigned char> params = {MOT1, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Move up Mot2
- */
+///  Move up Mot2
 void SerialComTlt::moveMot2Up() {
   vector<unsigned char> params = {MOT2, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Move down Mot1
- */
+///  Move down Mot1
 void SerialComTlt::moveMot1Down() {
   vector<unsigned char> params = {MOT1, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Move down Mot2
- */
+//  Move down Mot2
 void SerialComTlt::moveMot2Down() {
 
   vector<unsigned char> params = {MOT2, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Set the speed of both Mot1 and Mot2
- */
+// Set the speed of both Mot1 and Mot2
 void SerialComTlt::setLiftSpeed(int speed) {
 
   // Clamp max speed command
@@ -251,41 +238,31 @@ void SerialComTlt::setLiftSpeed(int speed) {
   sendCmd("RT", &params);
 }
 
-/*
- * Stop both motors
- */
+/// Stop both motors
 void SerialComTlt::stop() {
   stopMot1();
   stopMot2();
 }
 
-/*
- * Stop Mot1
- */
+/// Stop Mot1
 void SerialComTlt::stopMot1() {
   vector<unsigned char> params = {MOT1, 0x00}; // 0 fast stop   1 smooth stop
   sendCmd("RS", &params);                      // stop moving
 }
 
-/*
- * Stop Mot2
- */
+/// Stop Mot2
 void SerialComTlt::stopMot2() {
   vector<unsigned char> params = {MOT2, 0x00};
   sendCmd("RS", &params); // stop moving
 }
 
-/*
- * Stop all motors
- */
+/// Stop all motors
 void SerialComTlt::stopMotAll() {
   vector<unsigned char> params = {MOT_ALL, 0x00}; // 0 fast stop   1 smooth stop
   sendCmd("RS", &params);                         // stop moving
 }
 
-/*
- * Get position
- */
+/// Get position
 double SerialComTlt::getColumnSize() {
   getPoseM1();
   getPoseM2();
@@ -295,30 +272,22 @@ double SerialComTlt::getColumnSize() {
   return current_pose_;
 }
 
-/*
- * Stop velocity
- */
+/// Stop velocity
 double SerialComTlt::getColumnVelocity() { return current_velocity_; }
 
-/*
- * Get raw position of Mot1
- */
+/// Get raw position of Mot1
 void SerialComTlt::getPoseM1() {
   vector<unsigned char> params = {MOT1_ADDR, 0x00};
   sendCmd("RG", &params);
 }
 
-/*
- * Get raw position of Mot2
- */
+/// Get raw position of Mot2
 void SerialComTlt::getPoseM2() {
   vector<unsigned char> params = {MOT2_ADDR, 0x00};
   sendCmd("RG", &params);
 }
 
-/*
- * Loop to maintain the remote function with RC command
- */
+/// Loop to maintain the remote function with RC command
 void SerialComTlt::comLoop() {
   vector<unsigned char> params = {0x01, 0x00, 0xff};
   int speed_command;
@@ -328,27 +297,42 @@ void SerialComTlt::comLoop() {
   // if we change directions too fast, the liftkit may not respond. So we have
   // to wait for cycles_to_wait before sending a new command
   static int num_cycles_waited = 0;
+  // run this while ROS has told us we are good to go
   while (run_) {
     while (com_started_) {
-
       sendCmd("RC", &params);
+
+      // get the position data from the liftkit for ROS
       getColumnSize();
-      speed_command = abs(Kp * (current_target_ - current_pose_));
+
+      // get error and threshold state
+      double error = current_target_ - current_pose_;
+      bool below_threshold = abs(error) < LIFTKIT_SETPOINT_THRESHOLD;
+
+      // command speed based on a Proportional controller
+      speed_command = abs(Kp * error);
       setLiftSpeed(speed_command);
+
       // if we detect a change in target and we are currently looking for a
       // target, set to move either up or down
-      if (current_target_ != last_target_ && !already_has_goal_ &&
+      if ((current_target_ != last_target_) && !already_has_goal_ &&
           (num_cycles_waited++ == cycles_to_wait)) {
+
+        // we are currently working on a goal
         already_has_goal_ = true;
-        if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
-          moveUp();
-        } else if (current_target_ - current_pose_ <=
-                   -LIFTKIT_SETPOINT_THRESHOLD) {
-          moveDown();
-        } else {
+
+        // if we are below the threshold, the robot won't actually move, so
+        // don't try to go anywhere and tell the robot to stop.
+        if (below_threshold) {
           already_has_goal_ = false;
           stop();
+        } else if (error > 0) {
+          moveUp();
+        } else if (error < 0) {
+          moveDown();
         }
+
+        // we commanded something this cycle, so restart counter
         num_cycles_waited = 0;
       }
 
@@ -361,15 +345,13 @@ void SerialComTlt::comLoop() {
 
       // if we detected a change in goal direction, or we have reached our goal,
       // we need to stop, and start looking for our new goal
-      if ((abs(current_pose_ - current_target_) <=
-           LIFTKIT_SETPOINT_THRESHOLD) ||
-          ((curr_dir != last_dir))) {
+      if (below_threshold || (curr_dir != last_dir)) {
         already_has_goal_ = false;
         stop();
       }
 
+      // update persistent values for next iteration
       last_dir = curr_dir;
-      // if (curr_dir != MOVING_STOPPED) last_moving_dir=curr_moving_dir;
       last_target_ = current_target_;
       last_time = curr_time;
 
@@ -378,7 +360,7 @@ void SerialComTlt::comLoop() {
       int64_t dt_read_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
                              curr_time - last_time)
                              .count();
-
+      // calculate velocity to pass back to ROS
       current_velocity_ = (current_pose_ - previous_pose_) /
                           (static_cast<double>(dt_read_) / 1.0e9);
       usleep(100);
@@ -387,10 +369,8 @@ void SerialComTlt::comLoop() {
   }
 }
 
-/*
- * Convert the command in bytes and compute the checksum before writing to
- * serial com
- */
+/// Convert the command in bytes and compute the checksum before writing to
+/// serial com
 bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param) {
   lock_.lock();
   vector<unsigned char> final_cmd;
@@ -567,9 +547,7 @@ vector<unsigned char> SerialComTlt::feedback() {
   return received_data;
 }
 
-/*
- * Compute the checksum
- */
+/// Compute the checksum
 unsigned short SerialComTlt::calculateChecksum(vector<unsigned char> *cmd) {
   unsigned short crc = 0;
   for (vector<unsigned char>::iterator it = cmd->begin(); it != cmd->end();
@@ -580,9 +558,7 @@ unsigned short SerialComTlt::calculateChecksum(vector<unsigned char> *cmd) {
   return crc;
 }
 
-/*
- * Compare the response checksum with the calculated
- */
+/// Compare the response checksum with the calculated
 bool SerialComTlt::checkResponseChecksum(vector<unsigned char> *response) {
   unsigned short response_checksum_lsb = *(response->end() - 2);
   unsigned short response_checksum_msb = *(response->end() - 1);
@@ -653,9 +629,7 @@ bool SerialComTlt::checkResponseAck(vector<unsigned char> *response) {
   return false;
 }
 
-/*
- *  Extract motor pose from the response
- */
+///  Extract motor pose from the response
 bool SerialComTlt::extractPose(vector<unsigned char> *response, int motor) {
   int position = (unsigned char)(*(response->end() - 5)) << 8 |
                  (unsigned char)(*(response->end() - 6));
@@ -670,9 +644,7 @@ bool SerialComTlt::extractPose(vector<unsigned char> *response, int motor) {
   return true;
 }
 
-/*
- * Converter
- */
+/// Converter
 vector<unsigned char> SerialComTlt::intToBytes(int paramInt) {
 
   vector<unsigned char> arrayOfByte(4);
