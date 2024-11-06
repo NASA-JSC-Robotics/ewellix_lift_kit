@@ -231,8 +231,7 @@ void SerialComTlt::setLiftSpeed(int speed) {
   auto speed_param = static_cast<unsigned char>(abs(speed));
 
   RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
-                "commanded speed: %i",
-                speed_param);
+              "commanded speed: %i", speed_param);
 
   // Set MOT1 speed
   vector<unsigned char> params = {SPEED_CMD,        SPEED_UNUSED, MOT1_ADDR,
@@ -307,7 +306,18 @@ void SerialComTlt::comLoop() {
   // run this while ROS has told us we are good to go
   while (run_) {
     while (com_started_) {
+
+      // Log timing
+      curr_time = std::chrono::steady_clock::now();
+      // send command to stay in remote control mode
       sendCmd("RC", &params);
+      double ms = static_cast<double>(
+                      std::chrono::duration_cast<std::chrono::nanoseconds>(
+                          curr_time - last_time)
+                          .count()) /
+                  1.0e6;
+      RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
+                  "send time: %0.3f", ms);
 
       // read portion
 
@@ -317,8 +327,17 @@ void SerialComTlt::comLoop() {
                              curr_time - last_time)
                              .count();
 
+      // Log timing
+      curr_time = std::chrono::steady_clock::now();
       // get the position data from the liftkit for ROS
       getColumnSize();
+      ms = static_cast<double>(
+               std::chrono::duration_cast<std::chrono::nanoseconds>(curr_time -
+                                                                    last_time)
+                   .count()) /
+           1.0e6;
+      RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
+                  "recv time: %0.3f", ms);
 
       // get error and threshold state
       double error = current_target_ - current_pose_;
@@ -328,7 +347,7 @@ void SerialComTlt::comLoop() {
                                  (static_cast<double>(dt_read_) / 1.0e9));
       // desired_velocity_ = desired_vel_ema_.get_average();
       desired_velocity_ = (current_target_ - last_target_) /
-                                 (static_cast<double>(dt_read_) / 1.0e9);
+                          (static_cast<double>(dt_read_) / 1.0e9);
 
       // calculate actual and desired velocity to pass back to ROS
       current_velocity_ = (current_pose_ - previous_pose_) /
@@ -344,8 +363,10 @@ void SerialComTlt::comLoop() {
       // only set the speed command if it is fast enough
       if (abs(int(speed_command) / 2) > SPEED_LOW_LIMIT) {
         setLiftSpeed(speed_command);
-      }
-      else {
+      } else {
+        // the liftkit does not seem to respect a commanded speed of 0,
+        // so we command 2, which will send 1 to each motor which will
+        // not result in movement
         setLiftSpeed(2);
       }
 

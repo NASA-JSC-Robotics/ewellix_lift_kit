@@ -43,4 +43,3 @@ ewellix_state_broadcaster:
       - commanded_velocity
       - desired_velocity
     use_local_topics: true
-
