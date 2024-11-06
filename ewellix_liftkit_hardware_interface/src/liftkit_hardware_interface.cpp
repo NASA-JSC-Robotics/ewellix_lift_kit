@@ -32,6 +32,8 @@ CallbackReturn LiftkitHardwareInterface::on_init(
                                numeric_limits<double>::quiet_NaN());
   hw_states_robot_ready_.resize(info_.joints.size(),
                                 numeric_limits<double>::quiet_NaN());
+  hw_states_extra_.resize(info_.joints[0].state_interfaces.size() - 3,
+                          numeric_limits<double>::quiet_NaN());
   hw_commands_positions_.resize(info_.joints.size(),
                                 numeric_limits<double>::quiet_NaN());
   // signal(SIGINT, signal_callback_handler);
@@ -76,6 +78,12 @@ LiftkitHardwareInterface::export_state_interfaces() {
         &hw_states_robot_ready_[i]));
   }
 
+  for (uint i = 0; i < info_.joints[0].state_interfaces.size() - 3; ++i) {
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints[0].name, info_.joints[0].state_interfaces[i + 3].name,
+        &hw_states_extra_[i]));
+  }
+
   return state_interfaces;
 }
 
@@ -99,6 +107,9 @@ CallbackReturn LiftkitHardwareInterface::on_activate(
     hw_states_positions_[i] = 0;
     hw_states_velocities_[i] = 0;
     hw_states_robot_ready_[i] = 0;
+  }
+  for (unsigned int i = 0; i < hw_states_extra_.size(); ++i) {
+    hw_states_extra_[i] = 0;
   }
   for (unsigned int i = 0; i < hw_commands_positions_.size(); ++i) {
     hw_commands_positions_[i] = 0;
@@ -147,6 +158,9 @@ LiftkitHardwareInterface::read(const rclcpp::Time &time,
   previous_position_ = hw_states_positions_[0];
   hw_states_velocities_[0] = srl_.current_velocity_;
   hw_states_robot_ready_[0] = 1.0;
+
+  hw_states_extra_[0] = srl_.desired_velocity_;
+  hw_states_extra_[1] = srl_.commanded_velocity_;
 
   // There is an issue when homing the robot that causes the position to read as
   // an epsilon less than 0 (e.g. -0.001), violating joint limits. If that is

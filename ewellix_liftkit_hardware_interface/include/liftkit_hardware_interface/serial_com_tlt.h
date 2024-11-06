@@ -28,6 +28,25 @@ class SerialComTlt {
 private:
   enum DIR { MOVING_UP, MOVING_DOWN, MOVING_STOPPED };
 
+  class EMA {
+  private:
+    double alpha;
+    double ema;
+
+  public:
+    EMA(double alpha) : alpha(alpha), ema(0) {}
+
+    void add_value(double value) {
+      if (ema == 0) {
+        ema = value;
+      } else {
+        ema = alpha * value + (1 - alpha) * ema;
+      }
+    }
+
+    double get_average() const { return ema; }
+  };
+
 public:
   SerialComTlt();
   ~SerialComTlt();
@@ -54,6 +73,8 @@ public:
   double current_target_; //
   double current_pose_;
   double current_velocity_;
+  double desired_velocity_;
+  double commanded_velocity_;
   double previous_pose_;
   serial::Serial serial_tlt_;
   bool debug_;
@@ -65,6 +86,8 @@ public:
   int mot_ticks_;
   bool already_has_goal_;
   mutex lock_;
+
+  EMA desired_vel_ema_;
 
   DIR curr_dir = DIR::MOVING_STOPPED;
   DIR last_dir = DIR::MOVING_STOPPED;

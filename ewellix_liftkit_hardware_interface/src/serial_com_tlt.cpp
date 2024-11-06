@@ -30,9 +30,9 @@ constexpr int OPEN_COMM = 0x01;
 //
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
-constexpr int Kp = 1000;
+constexpr int Kp = 10;
 
-SerialComTlt::SerialComTlt() {
+SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   run_ = true;
   debug_ = false;
   stop_loop_ = false;
@@ -217,6 +217,9 @@ void SerialComTlt::moveMot2Down() {
 // Set the speed of both Mot1 and Mot2
 void SerialComTlt::setLiftSpeed(int speed) {
 
+  // divide by two so that we get the speed per lift segment
+  speed = speed / 2;
+
   // Clamp max speed command
   if (abs(speed) > SPEED_HIGH_LIMIT)
     speed = SPEED_HIGH_LIMIT;
@@ -302,6 +305,14 @@ void SerialComTlt::comLoop() {
     while (com_started_) {
       sendCmd("RC", &params);
 
+      // read portion
+
+      // get period of cycle for velocity calculation
+      curr_time = std::chrono::steady_clock::now();
+      int64_t dt_read_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                             curr_time - last_time)
+                             .count();
+
       // get the position data from the liftkit for ROS
       getColumnSize();
 
@@ -309,9 +320,29 @@ void SerialComTlt::comLoop() {
       double error = current_target_ - current_pose_;
       bool below_threshold = abs(error) < LIFTKIT_SETPOINT_THRESHOLD;
 
+      desired_vel_ema_.add_value((current_target_ - last_target_) /
+                                 (static_cast<double>(dt_read_) / 1.0e9));
+      desired_velocity_ = desired_vel_ema_.get_average();
+
+      // calculate actual and desired velocity to pass back to ROS
+      current_velocity_ = (current_pose_ - previous_pose_) /
+                          (static_cast<double>(dt_read_) / 1.0e9);
+
+      // update persistent values for next iteration
+      last_dir = curr_dir;
+      last_target_ = current_target_;
+      last_time = curr_time;
+
+      // write portion
+
       // command speed based on a Proportional controller
-      speed_command = abs(Kp * error);
-      setLiftSpeed(speed_command);
+      double ff_speed = desired_velocity_ * METERS_TO_TICKS / 10.0;
+      speed_command = abs(Kp * error) + ff_speed;
+
+      // only set the speed command if it is fast enough
+      if (int(speed_command) / 2 > SPEED_LOW_LIMIT) {
+        setLiftSpeed(speed_command);
+      }
 
       // if we detect a change in target and we are currently looking for a
       // target, set to move either up or down
@@ -350,19 +381,6 @@ void SerialComTlt::comLoop() {
         stop();
       }
 
-      // update persistent values for next iteration
-      last_dir = curr_dir;
-      last_target_ = current_target_;
-      last_time = curr_time;
-
-      // get period of cycle for velocity calculation
-      curr_time = std::chrono::steady_clock::now();
-      int64_t dt_read_ = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                             curr_time - last_time)
-                             .count();
-      // calculate velocity to pass back to ROS
-      current_velocity_ = (current_pose_ - previous_pose_) /
-                          (static_cast<double>(dt_read_) / 1.0e9);
       usleep(100);
     }
     usleep(1);
