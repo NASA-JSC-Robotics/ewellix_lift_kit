@@ -31,7 +31,21 @@ def generate_launch_description():
             #    "-p", controller_params_file
         ],
     )
+    ewellix_state_broadcaster = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "ewellix_state_broadcaster",
+            "--controller-manager-timeout",
+            "100",
+            "-c",
+            "controller_manager",
+            "-t",
+            "joint_state_broadcaster/JointStateBroadcaster",
+            #    "-p", controller_params_file
+        ],
+    )
 
-    nodes = [position_trajectory_controller_spawner]
+    nodes = [position_trajectory_controller_spawner, ewellix_state_broadcaster]
 
     return LaunchDescription(declared_arguments + nodes)

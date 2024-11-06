@@ -30,7 +30,7 @@ constexpr int OPEN_COMM = 0x01;
 //
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
-constexpr int Kp = 10;
+constexpr int Kp = 1000;
 
 SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   run_ = true;
@@ -224,11 +224,15 @@ void SerialComTlt::setLiftSpeed(int speed) {
   if (abs(speed) > SPEED_HIGH_LIMIT)
     speed = SPEED_HIGH_LIMIT;
   // Clamp min speed command
-  if (abs(speed) < SPEED_LOW_LIMIT)
-    speed = SPEED_LOW_LIMIT;
+  // if (abs(speed) < SPEED_LOW_LIMIT)
+  //   speed = SPEED_LOW_LIMIT;
 
   // Explicitly convert speed for the command interface
   auto speed_param = static_cast<unsigned char>(abs(speed));
+
+  RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
+                "commanded speed: %i",
+                speed_param);
 
   // Set MOT1 speed
   vector<unsigned char> params = {SPEED_CMD,        SPEED_UNUSED, MOT1_ADDR,
@@ -322,26 +326,27 @@ void SerialComTlt::comLoop() {
 
       desired_vel_ema_.add_value((current_target_ - last_target_) /
                                  (static_cast<double>(dt_read_) / 1.0e9));
-      desired_velocity_ = desired_vel_ema_.get_average();
+      // desired_velocity_ = desired_vel_ema_.get_average();
+      desired_velocity_ = (current_target_ - last_target_) /
+                                 (static_cast<double>(dt_read_) / 1.0e9);
 
       // calculate actual and desired velocity to pass back to ROS
       current_velocity_ = (current_pose_ - previous_pose_) /
                           (static_cast<double>(dt_read_) / 1.0e9);
 
-      // update persistent values for next iteration
-      last_dir = curr_dir;
-      last_target_ = current_target_;
-      last_time = curr_time;
-
       // write portion
 
       // command speed based on a Proportional controller
       double ff_speed = desired_velocity_ * METERS_TO_TICKS / 10.0;
-      speed_command = abs(Kp * error) + ff_speed;
-
+      ff_speed *= 25.0;
+      speed_command = Kp * error + ff_speed;
+      commanded_velocity_ = speed_command;
       // only set the speed command if it is fast enough
-      if (int(speed_command) / 2 > SPEED_LOW_LIMIT) {
+      if (abs(int(speed_command) / 2) > SPEED_LOW_LIMIT) {
         setLiftSpeed(speed_command);
+      }
+      else {
+        setLiftSpeed(2);
       }
 
       // if we detect a change in target and we are currently looking for a
@@ -380,6 +385,11 @@ void SerialComTlt::comLoop() {
         already_has_goal_ = false;
         stop();
       }
+
+      // update persistent values for next iteration
+      last_dir = curr_dir;
+      last_target_ = current_target_;
+      last_time = curr_time;
 
       usleep(100);
     }
