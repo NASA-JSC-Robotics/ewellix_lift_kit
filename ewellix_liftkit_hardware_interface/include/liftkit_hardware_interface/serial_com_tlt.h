@@ -27,6 +27,7 @@ using namespace std;
 class SerialComTlt {
 private:
   enum DIR { MOVING_UP, MOVING_DOWN, MOVING_STOPPED };
+  enum MOTOR_NUM { MOTOR_ONE, MOTOR_TWO};
 
   class EMA {
   private:
@@ -82,11 +83,20 @@ public:
   bool com_started_;
   int mot1_pose_;
   int mot2_pose_;
+  double mot1_pose_m_;
+  double mot2_pose_m_;
   double last_target_;
   int mot_ticks_;
   bool already_has_goal_;
   mutex lock_;
   bool stopped_ = false;
+
+  std::vector<double> speed_commands_;
+  std::vector<DIR> curr_dirs_;
+  std::vector<DIR> last_dirs_;
+  std::vector<bool> should_moves_;
+  std::vector<bool> stoppeds_;
+  std::vector<int> num_cycles_waiteds_;
 
   EMA desired_vel_ema_;
 
@@ -132,6 +142,8 @@ public:
   void stopMotAll();
   /// set the speed of both motors
   void setLiftSpeed(int speed);
+  /// set the speed for one motor
+  void setLiftSpeedForMotor(int speed, MOTOR_NUM motor_num);
 
   // For the Checksum
   unsigned short CRC_TABLE[256] = {

@@ -60,6 +60,13 @@ SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
 
   curr_dir = MOVING_STOPPED;
   last_dir = MOVING_STOPPED;
+
+  speed_commands_ = std::vector<double>(2,LIFT_CMD_NO_MOVE);
+  curr_dirs_ = std::vector<DIR>(2,DIR::MOVING_STOPPED);
+  last_dirs_ = std::vector<DIR>(2,DIR::MOVING_STOPPED);
+  should_moves_ = std::vector<bool>(2,0);
+  stoppeds_ = std::vector<bool>(2,false);
+  num_cycles_waiteds_ = std::vector<int>(2,0);
 }
 
 SerialComTlt::~SerialComTlt() {
@@ -201,25 +208,28 @@ void SerialComTlt::moveDown() {
 
 ///  Move up Mot1
 void SerialComTlt::moveMot1Up() {
+  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 1 up");      
   vector<unsigned char> params = {MOT1, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
 ///  Move up Mot2
 void SerialComTlt::moveMot2Up() {
+  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 2 up");      
   vector<unsigned char> params = {MOT2, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
 ///  Move down Mot1
 void SerialComTlt::moveMot1Down() {
+  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 1 down");      
   vector<unsigned char> params = {MOT1, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
 
 //  Move down Mot2
 void SerialComTlt::moveMot2Down() {
-
+  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 2 down");      
   vector<unsigned char> params = {MOT2, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
@@ -228,6 +238,12 @@ void SerialComTlt::moveMot2Down() {
 void SerialComTlt::setLiftSpeed(int speed) {
 
   speed = speed / 2;
+  setLiftSpeedForMotor(speed, MOTOR_NUM::MOTOR_ONE);
+  setLiftSpeedForMotor(speed, MOTOR_NUM::MOTOR_TWO);
+}
+
+// Set the speed of both Mot1 and Mot2
+void SerialComTlt::setLiftSpeedForMotor(int speed, MOTOR_NUM motor_num) {
 
   // Clamp max speed command
   if (abs(speed) > SPEED_HIGH_LIMIT)
@@ -236,34 +252,34 @@ void SerialComTlt::setLiftSpeed(int speed) {
   // Explicitly convert speed for the command interface
   auto speed_param = static_cast<unsigned char>(abs(speed));
 
-  // Set MOT1 speed
-  vector<unsigned char> params = {SPEED_CMD,        SPEED_UNUSED, MOT1_ADDR,
-                                  REMOTE_DATA_ITEM, speed_param,  SPEED_UNUSED};
-  sendCmd("RT", &params);
+  auto mot_addr = (motor_num == MOTOR_NUM::MOTOR_ONE) ? MOT1_ADDR : MOT2_ADDR;
 
-  // Set MOT2 speed
-  params = {SPEED_CMD,        SPEED_UNUSED, MOT2_ADDR,
-            REMOTE_DATA_ITEM, speed_param,  SPEED_UNUSED};
+  // Set speed for desired motor
+  vector<unsigned char> params = {SPEED_CMD,        SPEED_UNUSED, mot_addr,
+                                  REMOTE_DATA_ITEM, speed_param,  SPEED_UNUSED};
   sendCmd("RT", &params);
 }
 
 /// Stop both motors
-void SerialComTlt::stop() {
-  num_cycles_waited = 0;
-  stopped_ = true;
-  
+void SerialComTlt::stop() {  
   stopMot1();
   stopMot2();
 }
 
 /// Stop Mot1
 void SerialComTlt::stopMot1() {
+  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "stopping motor 1");      
+  num_cycles_waiteds_[0] = 0;
+  stoppeds_[0] = true;
   vector<unsigned char> params = {MOT1, 0x00}; // 0 fast stop   1 smooth stop
   sendCmd("RS", &params);                      // stop moving
 }
 
 /// Stop Mot2
 void SerialComTlt::stopMot2() {
+  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "stopping motor 2");      
+  num_cycles_waiteds_[1] = 0;
+  stoppeds_[1] = true;
   vector<unsigned char> params = {MOT2, 0x00};
   sendCmd("RS", &params); // stop moving
 }
@@ -281,7 +297,10 @@ double SerialComTlt::getColumnSize() {
   previous_pose_ = current_pose_;
   current_pose_ =
       double(mot1_pose_ + mot2_pose_ - 2 * TICKS_OFFSET) * TICKS_TO_METERS;
-  
+
+  mot1_pose_m_ = double(mot1_pose_ - TICKS_OFFSET)*TICKS_TO_METERS;
+  mot2_pose_m_ = double(mot2_pose_ - TICKS_OFFSET)*TICKS_TO_METERS;
+
   return current_pose_;
 }
 
@@ -323,8 +342,8 @@ void SerialComTlt::comLoop() {
       // get the position data from the liftkit for ROS
       getColumnSize();
 
-      static bool first_time = true;
-      if (first_time){
+      static std::vector<bool> first_times = {true, true};
+      if (first_times[0]){
         current_target_ = current_pose_;
       }
 
@@ -351,48 +370,75 @@ void SerialComTlt::comLoop() {
       if (speed_command < 0) speed_command *= UP_TO_DOWN_SPEED_FACTOR;
       commanded_velocity_ = speed_command;
 
-      // get the current direction we are moving. Ignore stop because we just
-      // care about change in up->down
-      if (speed_command < 0.0)
-        curr_dir = MOVING_DOWN;
-      else if (speed_command > 0.0)
-        curr_dir = MOVING_UP;
+      constexpr double max_height_epsilon = 0.01;
+      if (mot1_pose_m_ < (height_limit_/2 - max_height_epsilon))
+        speed_commands_[0] = speed_command;
       else
-        curr_dir = MOVING_STOPPED;
+        speed_commands_[1] = speed_command;
 
-      // if we are consistently moving in the same direction, we should move
-      bool should_move = (curr_dir == last_dir) &&
-                         ((abs(speed_command) / 2) > SPEED_LOW_LIMIT);
+      for (size_t i = 0; i < 2; i++)
+      {
+        // get the current direction we are moving. Ignore stop because we just
+        // care about change in up->down
+        if (speed_commands_[i] < 0.0)
+          curr_dirs_[i] = MOVING_DOWN;
+        else if (speed_commands_[i] > 0.0)
+          curr_dirs_[i] = MOVING_UP;
+        else
+          curr_dirs_[i] = MOVING_STOPPED;
 
-      int lift_cmd_speed = LIFT_CMD_NO_MOVE; // do not move
-      if (should_move) lift_cmd_speed = speed_command;
-      setLiftSpeed(speed_command);
+        // if we are consistently moving in the same direction, we should move
+        should_moves_[i] = (curr_dirs_[i] == last_dirs_[i]) &&
+                          ((abs(speed_commands_[i])) > SPEED_LOW_LIMIT);
 
-      // if we are in a state where would should 
-      if (should_move && stopped_){
-        if (num_cycles_waited >= cycles_to_wait){
-          if (speed_command > 0) {
-            moveUp();
-          } else {
-            moveDown();
+        int lift_cmd_speed = LIFT_CMD_NO_MOVE; // do not move
+        if (should_moves_[i]) lift_cmd_speed = speed_commands_[i];
+        if (i == 0)
+          setLiftSpeedForMotor(lift_cmd_speed,MOTOR_NUM::MOTOR_ONE);
+        else
+          setLiftSpeedForMotor(lift_cmd_speed,MOTOR_NUM::MOTOR_TWO);
+
+        // if we are in a state where would should 
+        if (should_moves_[i] && stoppeds_[i]){
+          if (num_cycles_waiteds_[i] >= cycles_to_wait){
+            if (speed_commands_[i] > 0) {
+              if (i == 0)
+                moveMot1Up();
+              else
+                moveMot2Up();
+            } else {
+              if (i == 0)
+                moveMot1Down();
+              else
+                moveMot2Down();
+            }
+            stoppeds_[i] = false;
           }
-          stopped_ = false;
+        }
+        else if (!should_moves_[i] && !stoppeds_[i] || first_times[i]){
+          if (i == 0)
+            stopMot1();
+          else
+            stopMot2();
+        }
+
+        //
+        if (stoppeds_[i]){
+          if (num_cycles_waiteds_[i]++ >= cycles_to_wait){
+            if (i == 0)
+              stopMot1();
+            else
+              stopMot2();
+          }
         }
       }
-      else if (!should_move && !stopped_ || first_time){
-        stop();
-      }
 
-      //
-      if (stopped_){
-        if (num_cycles_waited++ >= cycles_to_wait)
-          stop();
-      }
+      RCLCPP_INFO(rclcpp::get_logger("liftkit"), "speeds: [%0.3f, %0.3f]",speed_commands_[0], speed_commands_[1]);      
       
-      first_time = false;
+      first_times = {false, false};
 
       // update persistent values for next iteration
-      last_dir = curr_dir;
+      last_dirs_ = curr_dirs_;
       last_target_ = current_target_;
       last_time = curr_time;
 
