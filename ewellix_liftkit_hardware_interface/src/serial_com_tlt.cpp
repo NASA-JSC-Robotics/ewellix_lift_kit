@@ -27,16 +27,20 @@ constexpr int SPEED_UNUSED = 0x00;
 constexpr int REMOTE_DATA_ITEM = 0x30;
 constexpr int OPEN_COMM = 0x01;
 
-//
+// If you command 0 for move speed, the lift will not treat it as a 0 speed,
+// instead, we send a value of 2 which it will ifnore because it is below
+// the threshold
 constexpr int LIFT_CMD_NO_MOVE = 2;
 // found that when moving up at 100 speed, we move at about 0.035 m/s
 // which corresponds to a speed_cmd = desired_Speed * 3222
 constexpr double FF_SCALE = 3222;
 // Moving down needs 70% of the effort because it has gravity working with it
 constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7; 
+// feedback gain on the position error
+constexpr double Kp = 4000;
+
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
-constexpr double Kp = 2000;
 
 SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   run_ = true;
