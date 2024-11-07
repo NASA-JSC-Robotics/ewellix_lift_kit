@@ -191,9 +191,9 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
   if (hw_commands_positions_[0] > height_limit) {
     srl_.current_target_ = height_limit;
     if (!warned_) {
-      RCLCPP_WARN(rclcpp::get_logger("RailEHardwareInterface"),
-                  "Commanded Height was greater than height limit! height "
-                  "being clamped.");
+      RCLCPP_WARN(rclcpp::get_logger("LiftkitHardwareInterface"),
+                  "Commanded Height of %0.3f was greater than height limit of %0.3f! height "
+                  "being clamped.", hw_commands_positions_[0], height_limit);
       warned_ = true;
     }
   } else if (hw_commands_positions_[0] <= height_limit && warned_) {

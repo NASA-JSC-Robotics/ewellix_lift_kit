@@ -28,9 +28,15 @@ constexpr int REMOTE_DATA_ITEM = 0x30;
 constexpr int OPEN_COMM = 0x01;
 
 //
+constexpr int LIFT_CMD_NO_MOVE = 2;
+// found that when moving up at 100 speed, we move at about 0.035 m/s
+// which corresponds to a speed_cmd = desired_Speed * 3222
+constexpr double FF_SCALE = 3222;
+// Moving down needs 70% of the effort because it has gravity working with it
+constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7; 
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
-constexpr int Kp = 1000;
+constexpr int Kp = 2000;
 
 SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   run_ = true;
@@ -45,7 +51,7 @@ SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   last_target_ = 0.0;
   previous_pose_ = 0.0;
   current_pose_ = 0.0;
-  current_target_ = 0.0;
+  current_target_ = std::numeric_limits<double>::quiet_NaN();;
   height_limit_ = 0.7;
 
   curr_dir = MOVING_STOPPED;
@@ -102,7 +108,7 @@ bool SerialComTlt::startRs232Com() {
     sendCmd("RC", &params);
     getColumnSize();
     // send the lift to the home position
-    setColumnSize(0.0);
+    // setColumnSize(0.0);
     return true;
   } else {
     return false;
@@ -217,21 +223,14 @@ void SerialComTlt::moveMot2Down() {
 // Set the speed of both Mot1 and Mot2
 void SerialComTlt::setLiftSpeed(int speed) {
 
-  // divide by two so that we get the speed per lift segment
   speed = speed / 2;
 
   // Clamp max speed command
   if (abs(speed) > SPEED_HIGH_LIMIT)
     speed = SPEED_HIGH_LIMIT;
-  // Clamp min speed command
-  // if (abs(speed) < SPEED_LOW_LIMIT)
-  //   speed = SPEED_LOW_LIMIT;
 
   // Explicitly convert speed for the command interface
   auto speed_param = static_cast<unsigned char>(abs(speed));
-
-  RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
-              "commanded speed: %i", speed_param);
 
   // Set MOT1 speed
   vector<unsigned char> params = {SPEED_CMD,        SPEED_UNUSED, MOT1_ADDR,
@@ -246,6 +245,9 @@ void SerialComTlt::setLiftSpeed(int speed) {
 
 /// Stop both motors
 void SerialComTlt::stop() {
+  num_cycles_waited = 0;
+  stopped_ = true;
+  
   stopMot1();
   stopMot2();
 }
@@ -275,6 +277,7 @@ double SerialComTlt::getColumnSize() {
   previous_pose_ = current_pose_;
   current_pose_ =
       double(mot1_pose_ + mot2_pose_ - 2 * TICKS_OFFSET) * TICKS_TO_METERS;
+  
   return current_pose_;
 }
 
@@ -300,24 +303,10 @@ void SerialComTlt::comLoop() {
   auto last_time = std::chrono::steady_clock::now();
   auto curr_time = std::chrono::steady_clock::now();
 
-  // if we change directions too fast, the liftkit may not respond. So we have
-  // to wait for cycles_to_wait before sending a new command
-  static int num_cycles_waited = 0;
   // run this while ROS has told us we are good to go
   while (run_) {
     while (com_started_) {
-
-      // Log timing
-      curr_time = std::chrono::steady_clock::now();
-      // send command to stay in remote control mode
       sendCmd("RC", &params);
-      double ms = static_cast<double>(
-                      std::chrono::duration_cast<std::chrono::nanoseconds>(
-                          curr_time - last_time)
-                          .count()) /
-                  1.0e6;
-      RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
-                  "send time: %0.3f", ms);
 
       // read portion
 
@@ -327,71 +316,27 @@ void SerialComTlt::comLoop() {
                              curr_time - last_time)
                              .count();
 
-      // Log timing
-      curr_time = std::chrono::steady_clock::now();
       // get the position data from the liftkit for ROS
       getColumnSize();
-      ms = static_cast<double>(
-               std::chrono::duration_cast<std::chrono::nanoseconds>(curr_time -
-                                                                    last_time)
-                   .count()) /
-           1.0e6;
-      RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
-                  "recv time: %0.3f", ms);
+
+      static bool first_time = true;
+      if (first_time){
+        current_target_ = current_pose_;
+      }
 
       // get error and threshold state
       double error = current_target_ - current_pose_;
-      bool below_threshold = abs(error) < LIFTKIT_SETPOINT_THRESHOLD;
+      // bool below_threshold = abs(error) < LIFTKIT_SETPOINT_THRESHOLD;
 
       desired_vel_ema_.add_value((current_target_ - last_target_) /
                                  (static_cast<double>(dt_read_) / 1.0e9));
       // desired_velocity_ = desired_vel_ema_.get_average();
       desired_velocity_ = (current_target_ - last_target_) /
-                          (static_cast<double>(dt_read_) / 1.0e9);
+                                 (static_cast<double>(dt_read_) / 1.0e9);
 
       // calculate actual and desired velocity to pass back to ROS
       current_velocity_ = (current_pose_ - previous_pose_) /
                           (static_cast<double>(dt_read_) / 1.0e9);
-
-      // write portion
-
-      // command speed based on a Proportional controller
-      double ff_speed = desired_velocity_ * METERS_TO_TICKS / 10.0;
-      ff_speed *= 25.0;
-      speed_command = Kp * error + ff_speed;
-      commanded_velocity_ = speed_command;
-      // only set the speed command if it is fast enough
-      if (abs(int(speed_command) / 2) > SPEED_LOW_LIMIT) {
-        setLiftSpeed(speed_command);
-      } else {
-        // the liftkit does not seem to respect a commanded speed of 0,
-        // so we command 2, which will send 1 to each motor which will
-        // not result in movement
-        setLiftSpeed(2);
-      }
-
-      // if we detect a change in target and we are currently looking for a
-      // target, set to move either up or down
-      if ((current_target_ != last_target_) && !already_has_goal_ &&
-          (num_cycles_waited++ == cycles_to_wait)) {
-
-        // we are currently working on a goal
-        already_has_goal_ = true;
-
-        // if we are below the threshold, the robot won't actually move, so
-        // don't try to go anywhere and tell the robot to stop.
-        if (below_threshold) {
-          already_has_goal_ = false;
-          stop();
-        } else if (error > 0) {
-          moveUp();
-        } else if (error < 0) {
-          moveDown();
-        }
-
-        // we commanded something this cycle, so restart counter
-        num_cycles_waited = 0;
-      }
 
       // get the current direction we are moving. Ignore stop because we just
       // care about change in up->down
@@ -400,12 +345,43 @@ void SerialComTlt::comLoop() {
       else if (last_target_ < current_target_)
         curr_dir = MOVING_UP;
 
-      // if we detected a change in goal direction, or we have reached our goal,
-      // we need to stop, and start looking for our new goal
-      if (below_threshold || (curr_dir != last_dir)) {
-        already_has_goal_ = false;
+      // write portion
+
+      // command speed based on a Proportional controller
+      double ff_speed = desired_velocity_ * FF_SCALE;
+      speed_command = Kp * error + ff_speed;
+      if (speed_command < 0) speed_command *= UP_TO_DOWN_SPEED_FACTOR;
+      commanded_velocity_ = speed_command;
+
+      // if we change directions, tell it to stop first
+      bool should_move = (curr_dir == last_dir) &&
+                         ((abs(speed_command) / 2) > SPEED_LOW_LIMIT);
+
+      int lift_cmd_speed = LIFT_CMD_NO_MOVE; // do not move
+      if (should_move) lift_cmd_speed = speed_command;
+      setLiftSpeed(speed_command);
+
+      if (should_move && stopped_){
+        if (num_cycles_waited >= cycles_to_wait){
+          if (speed_command > 0) {
+            moveUp();
+          } else {
+            moveDown();
+          }
+          stopped_ = false;
+        }
+      }
+      else if (!should_move && !stopped_ || first_time){
         stop();
       }
+
+      //
+      if (stopped_){
+        if (num_cycles_waited++ >= cycles_to_wait)
+          stop();
+      }
+      
+      first_time = false;
 
       // update persistent values for next iteration
       last_dir = curr_dir;

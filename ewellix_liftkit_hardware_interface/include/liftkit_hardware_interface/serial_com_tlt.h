@@ -86,6 +86,7 @@ public:
   int mot_ticks_;
   bool already_has_goal_;
   mutex lock_;
+  bool stopped_ = false;
 
   EMA desired_vel_ema_;
 
@@ -95,6 +96,7 @@ public:
   // number of cycles to wait before changing directions. If you switch
   // directions to quickly, it will not update properly
   int cycles_to_wait = 2;
+  int num_cycles_waited = 0;
 
   // Command and Data Handling
   vector<unsigned char> intToBytes(int paramInt);
