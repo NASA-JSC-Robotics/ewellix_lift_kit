@@ -36,7 +36,7 @@ constexpr double FF_SCALE = 3222;
 constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7; 
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
-constexpr int Kp = 2000;
+constexpr double Kp = 2000;
 
 SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   run_ = true;
@@ -338,22 +338,25 @@ void SerialComTlt::comLoop() {
       current_velocity_ = (current_pose_ - previous_pose_) /
                           (static_cast<double>(dt_read_) / 1.0e9);
 
-      // get the current direction we are moving. Ignore stop because we just
-      // care about change in up->down
-      if (last_target_ > current_target_)
-        curr_dir = MOVING_DOWN;
-      else if (last_target_ < current_target_)
-        curr_dir = MOVING_UP;
 
       // write portion
 
       // command speed based on a Proportional controller
       double ff_speed = desired_velocity_ * FF_SCALE;
-      speed_command = Kp * error + ff_speed;
+      speed_command = static_cast<int>(Kp * error + ff_speed);
       if (speed_command < 0) speed_command *= UP_TO_DOWN_SPEED_FACTOR;
       commanded_velocity_ = speed_command;
 
-      // if we change directions, tell it to stop first
+      // get the current direction we are moving. Ignore stop because we just
+      // care about change in up->down
+      if (speed_command < 0.0)
+        curr_dir = MOVING_DOWN;
+      else if (speed_command > 0.0)
+        curr_dir = MOVING_UP;
+      else
+        curr_dir = MOVING_STOPPED;
+
+      // if we are consistently moving in the same direction, we should move
       bool should_move = (curr_dir == last_dir) &&
                          ((abs(speed_command) / 2) > SPEED_LOW_LIMIT);
 
@@ -361,6 +364,7 @@ void SerialComTlt::comLoop() {
       if (should_move) lift_cmd_speed = speed_command;
       setLiftSpeed(speed_command);
 
+      // if we are in a state where would should 
       if (should_move && stopped_){
         if (num_cycles_waited >= cycles_to_wait){
           if (speed_command > 0) {
