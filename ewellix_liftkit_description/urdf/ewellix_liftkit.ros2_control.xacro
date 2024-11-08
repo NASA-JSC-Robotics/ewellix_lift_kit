@@ -24,6 +24,8 @@
           <state_interface name="robot_ready"/>
           <state_interface name="desired_velocity"/>
           <state_interface name="commanded_velocity"/>
+          <state_interface name="vel_1"/>
+          <state_interface name="vel_2"/>
         </joint>
       </ros2_control>
     </xacro:unless>
@@ -43,6 +45,8 @@
           <state_interface name="robot_ready"/>
           <state_interface name="desired_velocity"/>
           <state_interface name="commanded_velocity"/>
+          <state_interface name="vel_1"/>
+          <state_interface name="vel_2"/>
         </joint>
       </ros2_control>
     </xacro:if>

@@ -161,6 +161,8 @@ LiftkitHardwareInterface::read(const rclcpp::Time &time,
 
   hw_states_extra_[0] = srl_.desired_velocity_;
   hw_states_extra_[1] = srl_.commanded_velocity_;
+  hw_states_extra_[2] = srl_.desired_velocity_;
+  hw_states_extra_[3] = srl_.commanded_velocity_;
 
   // There is an issue when homing the robot that causes the position to read as
   // an epsilon less than 0 (e.g. -0.001), violating joint limits. If that is

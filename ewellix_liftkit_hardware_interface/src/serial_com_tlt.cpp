@@ -37,7 +37,7 @@ constexpr double FF_SCALE = 3222;
 // Moving down needs 70% of the effort because it has gravity working with it
 constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7; 
 // feedback gain on the position error
-constexpr double Kp = 4000;
+constexpr double Kp = 5000;
 
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
@@ -370,26 +370,32 @@ void SerialComTlt::comLoop() {
       if (speed_command < 0) speed_command *= UP_TO_DOWN_SPEED_FACTOR;
       commanded_velocity_ = speed_command;
 
+      if (speed_command > 0) curr_dir = MOVING_UP;
+      else if (speed_command < 0) curr_dir = MOVING_DOWN;
+      else curr_dir = MOVING_STOPPED;
+      curr_dirs_ = {curr_dir, curr_dir};
+
+      speed_commands_ = {0, 0};
+
       constexpr double max_height_epsilon = 0.01;
-      if (mot1_pose_m_ < (height_limit_/2 - max_height_epsilon))
-        speed_commands_[0] = speed_command;
-      else
-        speed_commands_[1] = speed_command;
+      if (curr_dir == MOVING_UP){
+        if (mot1_pose_m_ < (height_limit_/2 - max_height_epsilon))
+          speed_commands_[0] = speed_command;
+        else
+          speed_commands_[1] = speed_command;
+      }
+      else if (curr_dir == MOVING_DOWN){
+        if (mot2_pose_m_ < (0 + max_height_epsilon))
+          speed_commands_[0] = speed_command;
+        else
+          speed_commands_[1] = speed_command;
+      }
 
       for (size_t i = 0; i < 2; i++)
       {
-        // get the current direction we are moving. Ignore stop because we just
-        // care about change in up->down
-        if (speed_commands_[i] < 0.0)
-          curr_dirs_[i] = MOVING_DOWN;
-        else if (speed_commands_[i] > 0.0)
-          curr_dirs_[i] = MOVING_UP;
-        else
-          curr_dirs_[i] = MOVING_STOPPED;
-
         // if we are consistently moving in the same direction, we should move
         should_moves_[i] = (curr_dirs_[i] == last_dirs_[i]) &&
-                          ((abs(speed_commands_[i])) > SPEED_LOW_LIMIT);
+                          (abs(speed_commands_[i]) > SPEED_LOW_LIMIT);
 
         int lift_cmd_speed = LIFT_CMD_NO_MOVE; // do not move
         if (should_moves_[i]) lift_cmd_speed = speed_commands_[i];
@@ -421,16 +427,18 @@ void SerialComTlt::comLoop() {
           else
             stopMot2();
         }
-
+        
+        num_cycles_waiteds_[i]++;
+        
         //
-        if (stoppeds_[i]){
-          if (num_cycles_waiteds_[i]++ >= cycles_to_wait){
-            if (i == 0)
-              stopMot1();
-            else
-              stopMot2();
-          }
-        }
+        // if (stoppeds_[i]){
+        //   if (num_cycles_waiteds_[i]++ >= cycles_to_wait){
+        //     if (i == 0)
+        //       stopMot1();
+        //     else
+        //       stopMot2();
+        //   }
+        // }
       }
 
       RCLCPP_INFO(rclcpp::get_logger("liftkit"), "speeds: [%0.3f, %0.3f]",speed_commands_[0], speed_commands_[1]);      
@@ -463,7 +471,6 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param) {
       final_cmd.push_back(*it); // add params to the cmd
     }
   }
-
   // Compute checksum
   unsigned short checksum = calculateChecksum(&final_cmd);
   unsigned short lsb = checksum & 0x00FF;
