@@ -17,6 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <vector>
+#include "control_toolbox/pid.hpp"
 
 using namespace std;
 
@@ -90,6 +91,8 @@ public:
   bool already_has_goal_;
   mutex lock_;
   bool stopped_ = false;
+
+  control_toolbox::Pid pid_; // pid controller to 
 
   std::vector<double> speed_commands_;
   std::vector<DIR> curr_dirs_;

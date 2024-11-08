@@ -21,6 +21,7 @@ find_package(rcpputils REQUIRED)
 find_package(rcutils REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(control_toolbox REQUIRED)
 find_package(serial REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
@@ -33,6 +34,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   rcutils
   std_msgs
   std_srvs
+  control_toolbox
   serial
   )
 
@@ -54,6 +56,7 @@ ament_target_dependencies(
   pluginlib
   rclcpp
   rclcpp_lifecycle
+  control_toolbox
   rcpputils
   rcutils
   serial

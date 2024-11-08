@@ -36,8 +36,13 @@ constexpr int LIFT_CMD_NO_MOVE = 2;
 constexpr double FF_SCALE = 3222;
 // Moving down needs 70% of the effort because it has gravity working with it
 constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7; 
-// feedback gain on the position error
+// controller gains
 constexpr double Kp = 5000;
+constexpr double Kd = 50.0;
+constexpr double Ki = 40000.0;
+constexpr double Ki_min = -20.0;
+constexpr double Ki_max = 20.0;
+constexpr bool antiwindup = true;
 
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
@@ -120,6 +125,8 @@ bool SerialComTlt::startRs232Com() {
     getColumnSize();
     // send the lift to the home position
     // setColumnSize(0.0);
+    pid_ = control_toolbox::Pid(Kp, Ki, Kd, Ki_max, Ki_min, antiwindup);
+    pid_.reset();
     return true;
   } else {
     return false;
@@ -208,28 +215,24 @@ void SerialComTlt::moveDown() {
 
 ///  Move up Mot1
 void SerialComTlt::moveMot1Up() {
-  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 1 up");      
   vector<unsigned char> params = {MOT1, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
 ///  Move up Mot2
 void SerialComTlt::moveMot2Up() {
-  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 2 up");      
   vector<unsigned char> params = {MOT2, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
 ///  Move down Mot1
 void SerialComTlt::moveMot1Down() {
-  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 1 down");      
   vector<unsigned char> params = {MOT1, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
 
 //  Move down Mot2
 void SerialComTlt::moveMot2Down() {
-  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "motor 2 down");      
   vector<unsigned char> params = {MOT2, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
@@ -268,7 +271,6 @@ void SerialComTlt::stop() {
 
 /// Stop Mot1
 void SerialComTlt::stopMot1() {
-  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "stopping motor 1");      
   num_cycles_waiteds_[0] = 0;
   stoppeds_[0] = true;
   vector<unsigned char> params = {MOT1, 0x00}; // 0 fast stop   1 smooth stop
@@ -277,7 +279,6 @@ void SerialComTlt::stopMot1() {
 
 /// Stop Mot2
 void SerialComTlt::stopMot2() {
-  RCLCPP_INFO(rclcpp::get_logger("liftkit"), "stopping motor 2");      
   num_cycles_waiteds_[1] = 0;
   stoppeds_[1] = true;
   vector<unsigned char> params = {MOT2, 0x00};
@@ -366,7 +367,9 @@ void SerialComTlt::comLoop() {
 
       // command speed based on a Proportional controller
       double ff_speed = desired_velocity_ * FF_SCALE;
-      speed_command = static_cast<int>(Kp * error + ff_speed);
+      double fb_command = pid_.computeCommand(error, dt_read_);
+      
+      speed_command = static_cast<int>(fb_command + ff_speed);
       if (speed_command < 0) speed_command *= UP_TO_DOWN_SPEED_FACTOR;
       commanded_velocity_ = speed_command;
 
@@ -429,20 +432,9 @@ void SerialComTlt::comLoop() {
         }
         
         num_cycles_waiteds_[i]++;
-        
-        //
-        // if (stoppeds_[i]){
-        //   if (num_cycles_waiteds_[i]++ >= cycles_to_wait){
-        //     if (i == 0)
-        //       stopMot1();
-        //     else
-        //       stopMot2();
-        //   }
-        // }
+
       }
 
-      RCLCPP_INFO(rclcpp::get_logger("liftkit"), "speeds: [%0.3f, %0.3f]",speed_commands_[0], speed_commands_[1]);      
-      
       first_times = {false, false};
 
       // update persistent values for next iteration
