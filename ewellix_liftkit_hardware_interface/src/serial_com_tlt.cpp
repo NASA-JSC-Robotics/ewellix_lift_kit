@@ -45,7 +45,8 @@ constexpr double Ki_max = 20.0;
 constexpr bool antiwindup = true;
 
 constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
-constexpr int SPEED_LOW_LIMIT = 32;   // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_UP = {28,28};   // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_DOWN = {28,28};   // As percentage of 100
 
 SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   run_ = true;
@@ -365,47 +366,60 @@ void SerialComTlt::comLoop() {
 
       // write portion
 
-      // command speed based on a Proportional controller
+      // command speed based on a PID controller as well as FF value
       double ff_speed = desired_velocity_ * FF_SCALE;
       double fb_command = pid_.computeCommand(error, dt_read_);
-      
       speed_command = static_cast<int>(fb_command + ff_speed);
+
+      // The robot actually moves a lot faster going down for the same
+      // speed - I estimated it needs about 70% of the command to move
+      // at the same speed.
       if (speed_command < 0) speed_command *= UP_TO_DOWN_SPEED_FACTOR;
       commanded_velocity_ = speed_command;
 
+      // set the current moving direction based on 
       if (speed_command > 0) curr_dir = MOVING_UP;
       else if (speed_command < 0) curr_dir = MOVING_DOWN;
       else curr_dir = MOVING_STOPPED;
       curr_dirs_ = {curr_dir, curr_dir};
 
+      // default initialize speed commands to 0s
       speed_commands_ = {0, 0};
-
-      constexpr double max_height_epsilon = 0.01;
+      constexpr double max_height_epsilon = 0.001;
+      // if we are moving up, and mot1 is < (0.35 - epsilon), use mot1
+      // otherwise use mot2
       if (curr_dir == MOVING_UP){
-        if (mot1_pose_m_ < (height_limit_/2 - max_height_epsilon))
-          speed_commands_[0] = speed_command;
-        else
+        if (mot2_pose_m_ < (height_limit_/2 - max_height_epsilon))
           speed_commands_[1] = speed_command;
+        else
+          speed_commands_[0] = speed_command;
       }
+      // if we are moving down, and mot2 is < (0 + epsilon), use mot1
+      // otherwise use mot2
       else if (curr_dir == MOVING_DOWN){
-        if (mot2_pose_m_ < (0 + max_height_epsilon))
-          speed_commands_[0] = speed_command;
-        else
+        if (mot1_pose_m_ < (0 + max_height_epsilon))
           speed_commands_[1] = speed_command;
+        else
+          speed_commands_[0] = speed_command;
       }
 
+      // loop over each of the motors to perform the same logic of what state
+      // they should be in
       for (size_t i = 0; i < 2; i++)
       {
+        auto speed_limit_this_direction = (curr_dirs_[i] == MOVING_UP) ? SPEED_LOW_LIMIT_UP : SPEED_LOW_LIMIT_DOWN;
         // if we are consistently moving in the same direction, we should move
         should_moves_[i] = (curr_dirs_[i] == last_dirs_[i]) &&
-                          (abs(speed_commands_[i]) > SPEED_LOW_LIMIT);
+                           (abs(speed_commands_[i]) > speed_limit_this_direction[i]);
 
-        int lift_cmd_speed = LIFT_CMD_NO_MOVE; // do not move
+        // default initialize to no movement on motor i
+        int lift_cmd_speed = LIFT_CMD_NO_MOVE; 
+        // if we said we should be moving, reassign to calculated cmd
         if (should_moves_[i]) lift_cmd_speed = speed_commands_[i];
-        if (i == 0)
-          setLiftSpeedForMotor(lift_cmd_speed,MOTOR_NUM::MOTOR_ONE);
-        else
-          setLiftSpeedForMotor(lift_cmd_speed,MOTOR_NUM::MOTOR_TWO);
+
+        // send command for whatever motor we are using.
+        auto cmd_motor = (i == 0) ? MOTOR_NUM::MOTOR_ONE : MOTOR_NUM::MOTOR_TWO;
+        setLiftSpeedForMotor(lift_cmd_speed,cmd_motor);
 
         // if we are in a state where would should 
         if (should_moves_[i] && stoppeds_[i]){
