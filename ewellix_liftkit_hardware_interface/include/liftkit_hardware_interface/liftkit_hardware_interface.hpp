@@ -71,6 +71,27 @@ protected:
   double previous_position_;
   SerialComTlt srl_;
   thread com_thread_;
+
+  class EMA {
+  private:
+    double alpha;
+    double ema;
+
+  public:
+    EMA(double alpha) : alpha(alpha), ema(0) {}
+
+    void add_value(double value) {
+      if (ema == 0) {
+        ema = value;
+      } else {
+        ema = alpha * value + (1 - alpha) * ema;
+      }
+    }
+
+    double get_average() const { return ema; }
+  };
+
+  std::shared_ptr<EMA> desired_vel_ema_;
 };
 } // namespace liftkit_hardware_interface
 

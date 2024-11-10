@@ -1,5 +1,6 @@
 
 
+#include "control_toolbox/pid.hpp"
 #include "serial/serial.h"
 #include <atomic>
 #include <boost/circular_buffer.hpp>
@@ -17,7 +18,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <vector>
-#include "control_toolbox/pid.hpp"
 
 using namespace std;
 
@@ -28,26 +28,7 @@ using namespace std;
 class SerialComTlt {
 private:
   enum DIR { MOVING_UP, MOVING_DOWN, MOVING_STOPPED };
-  enum MOTOR_NUM { MOTOR_ONE, MOTOR_TWO};
-
-  class EMA {
-  private:
-    double alpha;
-    double ema;
-
-  public:
-    EMA(double alpha) : alpha(alpha), ema(0) {}
-
-    void add_value(double value) {
-      if (ema == 0) {
-        ema = value;
-      } else {
-        ema = alpha * value + (1 - alpha) * ema;
-      }
-    }
-
-    double get_average() const { return ema; }
-  };
+  enum MOTOR_NUM { MOTOR_ONE, MOTOR_TWO };
 
 public:
   SerialComTlt();
@@ -92,7 +73,7 @@ public:
   mutex lock_;
   bool stopped_ = false;
 
-  control_toolbox::Pid pid_; // pid controller to 
+  control_toolbox::Pid pid_; // pid controller to
 
   std::vector<double> speed_commands_;
   std::vector<DIR> curr_dirs_;
@@ -100,8 +81,6 @@ public:
   std::vector<bool> should_moves_;
   std::vector<bool> stoppeds_;
   std::vector<int> num_cycles_waiteds_;
-
-  EMA desired_vel_ema_;
 
   DIR curr_dir = DIR::MOVING_STOPPED;
   DIR last_dir = DIR::MOVING_STOPPED;

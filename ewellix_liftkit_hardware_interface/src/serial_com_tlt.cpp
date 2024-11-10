@@ -35,7 +35,7 @@ constexpr int LIFT_CMD_NO_MOVE = 2;
 // which corresponds to a speed_cmd = desired_Speed * 3222
 constexpr double FF_SCALE = 3222;
 // Moving down needs 70% of the effort because it has gravity working with it
-constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7; 
+constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7;
 // controller gains
 constexpr double Kp = 5000;
 constexpr double Kd = 50.0;
@@ -44,11 +44,11 @@ constexpr double Ki_min = -20.0;
 constexpr double Ki_max = 20.0;
 constexpr bool antiwindup = true;
 
-constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
-std::vector<int> SPEED_LOW_LIMIT_UP = {28,28};   // As percentage of 100
-std::vector<int> SPEED_LOW_LIMIT_DOWN = {28,28};   // As percentage of 100
+constexpr int SPEED_HIGH_LIMIT = 100;             // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_UP = {28, 28};   // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_DOWN = {28, 28}; // As percentage of 100
 
-SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
+SerialComTlt::SerialComTlt() {
   run_ = true;
   debug_ = false;
   stop_loop_ = false;
@@ -61,18 +61,18 @@ SerialComTlt::SerialComTlt() : desired_vel_ema_(0.9) {
   last_target_ = 0.0;
   previous_pose_ = 0.0;
   current_pose_ = 0.0;
-  current_target_ = std::numeric_limits<double>::quiet_NaN();;
+  current_target_ = std::numeric_limits<double>::quiet_NaN();
   height_limit_ = 0.7;
 
   curr_dir = MOVING_STOPPED;
   last_dir = MOVING_STOPPED;
 
-  speed_commands_ = std::vector<double>(2,LIFT_CMD_NO_MOVE);
-  curr_dirs_ = std::vector<DIR>(2,DIR::MOVING_STOPPED);
-  last_dirs_ = std::vector<DIR>(2,DIR::MOVING_STOPPED);
-  should_moves_ = std::vector<bool>(2,0);
-  stoppeds_ = std::vector<bool>(2,false);
-  num_cycles_waiteds_ = std::vector<int>(2,0);
+  speed_commands_ = std::vector<double>(2, LIFT_CMD_NO_MOVE);
+  curr_dirs_ = std::vector<DIR>(2, DIR::MOVING_STOPPED);
+  last_dirs_ = std::vector<DIR>(2, DIR::MOVING_STOPPED);
+  should_moves_ = std::vector<bool>(2, 0);
+  stoppeds_ = std::vector<bool>(2, false);
+  num_cycles_waiteds_ = std::vector<int>(2, 0);
 }
 
 SerialComTlt::~SerialComTlt() {
@@ -265,7 +265,7 @@ void SerialComTlt::setLiftSpeedForMotor(int speed, MOTOR_NUM motor_num) {
 }
 
 /// Stop both motors
-void SerialComTlt::stop() {  
+void SerialComTlt::stop() {
   stopMot1();
   stopMot2();
 }
@@ -300,8 +300,8 @@ double SerialComTlt::getColumnSize() {
   current_pose_ =
       double(mot1_pose_ + mot2_pose_ - 2 * TICKS_OFFSET) * TICKS_TO_METERS;
 
-  mot1_pose_m_ = double(mot1_pose_ - TICKS_OFFSET)*TICKS_TO_METERS;
-  mot2_pose_m_ = double(mot2_pose_ - TICKS_OFFSET)*TICKS_TO_METERS;
+  mot1_pose_m_ = double(mot1_pose_ - TICKS_OFFSET) * TICKS_TO_METERS;
+  mot2_pose_m_ = double(mot2_pose_ - TICKS_OFFSET) * TICKS_TO_METERS;
 
   return current_pose_;
 }
@@ -345,7 +345,7 @@ void SerialComTlt::comLoop() {
       getColumnSize();
 
       static std::vector<bool> first_times = {true, true};
-      if (first_times[0]){
+      if (first_times[0]) {
         current_target_ = current_pose_;
       }
 
@@ -353,16 +353,15 @@ void SerialComTlt::comLoop() {
       double error = current_target_ - current_pose_;
       // bool below_threshold = abs(error) < LIFTKIT_SETPOINT_THRESHOLD;
 
-      desired_vel_ema_.add_value((current_target_ - last_target_) /
-                                 (static_cast<double>(dt_read_) / 1.0e9));
+      // desired_vel_ema_.add_value((current_target_ - last_target_) /
+      //  (static_cast<double>(dt_read_) / 1.0e9));
       // desired_velocity_ = desired_vel_ema_.get_average();
-      desired_velocity_ = (current_target_ - last_target_) /
-                                 (static_cast<double>(dt_read_) / 1.0e9);
+      // desired_velocity_ = (current_target_ - last_target_) /
+      //                            (static_cast<double>(dt_read_) / 1.0e9);
 
       // calculate actual and desired velocity to pass back to ROS
       current_velocity_ = (current_pose_ - previous_pose_) /
                           (static_cast<double>(dt_read_) / 1.0e9);
-
 
       // write portion
 
@@ -374,13 +373,17 @@ void SerialComTlt::comLoop() {
       // The robot actually moves a lot faster going down for the same
       // speed - I estimated it needs about 70% of the command to move
       // at the same speed.
-      if (speed_command < 0) speed_command *= UP_TO_DOWN_SPEED_FACTOR;
+      if (speed_command < 0)
+        speed_command *= UP_TO_DOWN_SPEED_FACTOR;
       commanded_velocity_ = speed_command;
 
-      // set the current moving direction based on 
-      if (speed_command > 0) curr_dir = MOVING_UP;
-      else if (speed_command < 0) curr_dir = MOVING_DOWN;
-      else curr_dir = MOVING_STOPPED;
+      // set the current moving direction based on
+      if (speed_command > 0)
+        curr_dir = MOVING_UP;
+      else if (speed_command < 0)
+        curr_dir = MOVING_DOWN;
+      else
+        curr_dir = MOVING_STOPPED;
       curr_dirs_ = {curr_dir, curr_dir};
 
       // default initialize speed commands to 0s
@@ -388,15 +391,15 @@ void SerialComTlt::comLoop() {
       constexpr double max_height_epsilon = 0.001;
       // if we are moving up, and mot1 is < (0.35 - epsilon), use mot1
       // otherwise use mot2
-      if (curr_dir == MOVING_UP){
-        if (mot2_pose_m_ < (height_limit_/2 - max_height_epsilon))
+      if (curr_dir == MOVING_UP) {
+        if (mot2_pose_m_ < (height_limit_ / 2 - max_height_epsilon))
           speed_commands_[1] = speed_command;
         else
           speed_commands_[0] = speed_command;
       }
       // if we are moving down, and mot2 is < (0 + epsilon), use mot1
       // otherwise use mot2
-      else if (curr_dir == MOVING_DOWN){
+      else if (curr_dir == MOVING_DOWN) {
         if (mot1_pose_m_ < (0 + max_height_epsilon))
           speed_commands_[1] = speed_command;
         else
@@ -405,25 +408,28 @@ void SerialComTlt::comLoop() {
 
       // loop over each of the motors to perform the same logic of what state
       // they should be in
-      for (size_t i = 0; i < 2; i++)
-      {
-        auto speed_limit_this_direction = (curr_dirs_[i] == MOVING_UP) ? SPEED_LOW_LIMIT_UP : SPEED_LOW_LIMIT_DOWN;
+      for (size_t i = 0; i < 2; i++) {
+        auto speed_limit_this_direction = (curr_dirs_[i] == MOVING_UP)
+                                              ? SPEED_LOW_LIMIT_UP
+                                              : SPEED_LOW_LIMIT_DOWN;
         // if we are consistently moving in the same direction, we should move
-        should_moves_[i] = (curr_dirs_[i] == last_dirs_[i]) &&
-                           (abs(speed_commands_[i]) > speed_limit_this_direction[i]);
+        should_moves_[i] =
+            (curr_dirs_[i] == last_dirs_[i]) &&
+            (abs(speed_commands_[i]) > speed_limit_this_direction[i]);
 
         // default initialize to no movement on motor i
-        int lift_cmd_speed = LIFT_CMD_NO_MOVE; 
+        int lift_cmd_speed = LIFT_CMD_NO_MOVE;
         // if we said we should be moving, reassign to calculated cmd
-        if (should_moves_[i]) lift_cmd_speed = speed_commands_[i];
+        if (should_moves_[i])
+          lift_cmd_speed = speed_commands_[i];
 
         // send command for whatever motor we are using.
         auto cmd_motor = (i == 0) ? MOTOR_NUM::MOTOR_ONE : MOTOR_NUM::MOTOR_TWO;
-        setLiftSpeedForMotor(lift_cmd_speed,cmd_motor);
+        setLiftSpeedForMotor(lift_cmd_speed, cmd_motor);
 
-        // if we are in a state where would should 
-        if (should_moves_[i] && stoppeds_[i]){
-          if (num_cycles_waiteds_[i] >= cycles_to_wait){
+        // if we are in a state where would should
+        if (should_moves_[i] && stoppeds_[i]) {
+          if (num_cycles_waiteds_[i] >= cycles_to_wait) {
             if (speed_commands_[i] > 0) {
               if (i == 0)
                 moveMot1Up();
@@ -437,16 +443,14 @@ void SerialComTlt::comLoop() {
             }
             stoppeds_[i] = false;
           }
-        }
-        else if (!should_moves_[i] && !stoppeds_[i] || first_times[i]){
+        } else if (!should_moves_[i] && !stoppeds_[i] || first_times[i]) {
           if (i == 0)
             stopMot1();
           else
             stopMot2();
         }
-        
-        num_cycles_waiteds_[i]++;
 
+        num_cycles_waiteds_[i]++;
       }
 
       first_times = {false, false};

@@ -40,6 +40,8 @@ CallbackReturn LiftkitHardwareInterface::on_init(
   system_info = info_;
   port = system_info.hardware_parameters["com_port"];
   height_limit = stof(system_info.hardware_parameters["height_limit"]);
+
+  desired_vel_ema_ = std::make_shared<EMA>(0.9);
   return CallbackReturn::SUCCESS;
 }
 
@@ -189,13 +191,27 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
   (void)time;
   (void)period;
 
+  static bool first_loop = true;
+  static double dt;
+  static rclcpp::Time last_time;
+  static double last_commanded_position = hw_commands_positions_[0];
+
+  if (first_loop) {
+    dt = period.seconds();
+    first_loop = false;
+  } else {
+    dt = (time - last_time).seconds();
+  }
+
   static bool warned_ = false;
   if (hw_commands_positions_[0] > height_limit) {
     srl_.current_target_ = height_limit;
     if (!warned_) {
       RCLCPP_WARN(rclcpp::get_logger("LiftkitHardwareInterface"),
-                  "Commanded Height of %0.3f was greater than height limit of %0.3f! height "
-                  "being clamped.", hw_commands_positions_[0], height_limit);
+                  "Commanded Height of %0.3f was greater than height limit of "
+                  "%0.3f! height "
+                  "being clamped.",
+                  hw_commands_positions_[0], height_limit);
       warned_ = true;
     }
   } else if (hw_commands_positions_[0] <= height_limit && warned_) {
@@ -204,6 +220,14 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
   } else {
     srl_.current_target_ = hw_commands_positions_[0];
   }
+
+  desired_vel_ema_->add_value((srl_.current_target_ - last_commanded_position) /
+                              dt);
+  srl_.desired_velocity_ = desired_vel_ema_->get_average();
+
+  last_time = time;
+  last_commanded_position = srl_.current_target_;
+
   return hardware_interface::return_type::OK;
 }
 } // namespace liftkit_hardware_interface
