@@ -62,6 +62,7 @@ SerialComTlt::SerialComTlt() {
   previous_pose_ = 0.0;
   current_pose_ = 0.0;
   current_target_ = std::numeric_limits<double>::quiet_NaN();
+  desired_velocity_ = 0.0;
   height_limit_ = 0.7;
 
   curr_dir = MOVING_STOPPED;
@@ -351,13 +352,6 @@ void SerialComTlt::comLoop() {
 
       // get error and threshold state
       double error = current_target_ - current_pose_;
-      // bool below_threshold = abs(error) < LIFTKIT_SETPOINT_THRESHOLD;
-
-      // desired_vel_ema_.add_value((current_target_ - last_target_) /
-      //  (static_cast<double>(dt_read_) / 1.0e9));
-      // desired_velocity_ = desired_vel_ema_.get_average();
-      // desired_velocity_ = (current_target_ - last_target_) /
-      //                            (static_cast<double>(dt_read_) / 1.0e9);
 
       // calculate actual and desired velocity to pass back to ROS
       current_velocity_ = (current_pose_ - previous_pose_) /
