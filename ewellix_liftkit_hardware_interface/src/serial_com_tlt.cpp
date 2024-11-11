@@ -37,16 +37,16 @@ constexpr double FF_SCALE = 3222;
 // Moving down needs 70% of the effort because it has gravity working with it
 constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7;
 // controller gains
-constexpr double Kp = 5000;
-constexpr double Kd = 50.0;
-constexpr double Ki = 40000.0;
-constexpr double Ki_min = -20.0;
-constexpr double Ki_max = 20.0;
+constexpr double Kp = 2000;
+constexpr double Kd = 200.0;
+constexpr double Ki = 20000.0;
+constexpr double Ki_min = -29.0;
+constexpr double Ki_max = 29.0;
 constexpr bool antiwindup = true;
 
 constexpr int SPEED_HIGH_LIMIT = 100;             // As percentage of 100
-std::vector<int> SPEED_LOW_LIMIT_UP = {28, 28};   // As percentage of 100
-std::vector<int> SPEED_LOW_LIMIT_DOWN = {28, 28}; // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_UP = {32, 32};   // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_DOWN = {32, 32}; // As percentage of 100
 
 SerialComTlt::SerialComTlt() {
   run_ = true;
