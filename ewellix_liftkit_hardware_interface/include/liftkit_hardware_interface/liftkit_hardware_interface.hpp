@@ -72,6 +72,7 @@ protected:
   SerialComTlt srl_;
   thread com_thread_;
 
+  // exponential moving average class to help filter velocity
   class EMA {
   private:
     double alpha;
@@ -81,8 +82,10 @@ protected:
     EMA(double alpha) : alpha(alpha), ema(0) {}
 
     void add_value(double value) {
-      if (ema == 0) {
+      static bool first_time = true;
+      if (first_time) {
         ema = value;
+        first_time = false;
       } else {
         ema = alpha * value + (1 - alpha) * ema;
       }

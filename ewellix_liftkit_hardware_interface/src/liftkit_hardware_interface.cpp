@@ -163,8 +163,6 @@ LiftkitHardwareInterface::read(const rclcpp::Time &time,
 
   hw_states_extra_[0] = srl_.desired_velocity_;
   hw_states_extra_[1] = srl_.commanded_velocity_;
-  hw_states_extra_[2] = srl_.desired_velocity_;
-  hw_states_extra_[3] = srl_.commanded_velocity_;
 
   // There is an issue when homing the robot that causes the position to read as
   // an epsilon less than 0 (e.g. -0.001), violating joint limits. If that is
@@ -191,11 +189,14 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
   (void)time;
   (void)period;
 
+  // local variables to keep track of from iteration to iteration
   static bool first_loop = true;
   static double dt;
   static rclcpp::Time last_time;
   static double last_commanded_position = hw_commands_positions_[0];
 
+  // if it is the first loop, there is no way to calculate dt, so use
+  // the expected period instead. Otherwise, calculate dt each loop
   if (first_loop) {
     dt = period.seconds();
     first_loop = false;
@@ -205,7 +206,7 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
 
   static bool warned_ = false;
   if (hw_commands_positions_[0] > height_limit) {
-    srl_.current_target_ = height_limit;
+    srl_.desired_pose_ = height_limit;
     if (!warned_) {
       RCLCPP_WARN(rclcpp::get_logger("LiftkitHardwareInterface"),
                   "Commanded Height of %0.3f was greater than height limit of "
@@ -216,17 +217,19 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
     }
   } else if (hw_commands_positions_[0] <= height_limit && warned_) {
     warned_ = false;
-    srl_.current_target_ = hw_commands_positions_[0];
+    srl_.desired_pose_ = hw_commands_positions_[0];
   } else {
-    srl_.current_target_ = hw_commands_positions_[0];
+    srl_.desired_pose_ = hw_commands_positions_[0];
   }
 
-  desired_vel_ema_->add_value((srl_.current_target_ - last_commanded_position) /
-                              dt);
+  // filter the desired velocity and set it in the ewellix class
+  double raw_velocity = (srl_.desired_pose_ - last_commanded_position) / dt;
+  desired_vel_ema_->add_value(raw_velocity);
   srl_.desired_velocity_ = desired_vel_ema_->get_average();
 
+  // store current values to reference next loop
   last_time = time;
-  last_commanded_position = srl_.current_target_;
+  last_commanded_position = srl_.desired_pose_;
 
   return hardware_interface::return_type::OK;
 }

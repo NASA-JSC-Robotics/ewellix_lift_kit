@@ -51,44 +51,46 @@ public:
   void comLoop();
 
   // Vars
-  bool run_; // variable for hwi to set for when it wants us to run loops
-  double height_limit_;   // height limit for stack, set in hwi params
-  double current_target_; //
-  double current_pose_;
-  double current_velocity_;
-  double desired_velocity_;
-  double commanded_velocity_;
-  double previous_pose_;
-  serial::Serial serial_tlt_;
-  bool debug_;
-  bool stop_loop_;
-  bool com_started_;
-  int mot1_pose_;
-  int mot2_pose_;
-  double mot1_pose_m_;
-  double mot2_pose_m_;
-  double last_target_;
-  int mot_ticks_;
-  bool already_has_goal_;
-  mutex lock_;
-  bool stopped_ = false;
+  bool run_;       // variable for hwi to set for when it wants us to run loops
+  bool debug_;     // prints out messages if we are debugging
+  bool stop_loop_; // handles when to break when getting feedback
+  bool com_started_; // handles when to exit communication loop
 
-  control_toolbox::Pid pid_; // pid controller to
+  double height_limit_; // height limit for stack, set in hwi params
 
-  std::vector<double> speed_commands_;
-  std::vector<DIR> curr_dirs_;
-  std::vector<DIR> last_dirs_;
-  std::vector<bool> should_moves_;
-  std::vector<bool> stoppeds_;
-  std::vector<int> num_cycles_waiteds_;
+  double desired_pose_;       // target position from other system
+  double desired_velocity_;   // desired velocity from other system
+  double current_pose_;       // current pose measured from liftkit
+  double previous_pose_;      // previous pose to use for velocity calcs
+  double current_velocity_;   // estimated velocity from recent poses
+  double commanded_velocity_; // variable to track command to pass up
+  int mot1_pose_;             // pose in ticks of motor 1
+  int mot2_pose_;             // pose in ticks of motor 2
+  double mot1_pose_m_;        // pose in meters of motor 1
+  double mot2_pose_m_;        // pose in meters of motor 1
+  int mot_ticks_;             // pose of full stack in ticks
+  mutex lock_; // lock for communication (I think is unnecessary?)
 
-  DIR curr_dir = DIR::MOVING_STOPPED;
-  DIR last_dir = DIR::MOVING_STOPPED;
+  serial::Serial serial_tlt_; // serial communication object
 
-  // number of cycles to wait before changing directions. If you switch
-  // directions to quickly, it will not update properly
-  int cycles_to_wait = 2;
-  int num_cycles_waited = 0;
+  control_toolbox::Pid pid_; // pid controller for providing velocity cmd
+
+  // these all provide two indices for the two different motors, with motor
+  // 1 being in index 0, and motor 2 being in index 1
+  std::vector<double> speed_commands_; // commanded speeds
+  std::vector<DIR> curr_dirs_;         // current movement directions
+  std::vector<DIR> last_dirs_;         // movement directions previous cycle
+  std::vector<bool> should_moves_; // whether or not it should move this cycle
+  std::vector<bool> stoppeds_;     // whether or not it is currently stopped
+  std::vector<int>
+      num_cycles_waiteds_; // how many cycles waited since last stop
+
+  DIR curr_dir = DIR::MOVING_STOPPED; // current direction overall
+  DIR last_dir = DIR::MOVING_STOPPED; // last direction overall
+
+  int cycles_to_wait =
+      2; // number of cycles to wait before changing directions. If you switch
+         // directions to quickly, it will not update properly
 
   // Command and Data Handling
   vector<unsigned char> intToBytes(int paramInt);
