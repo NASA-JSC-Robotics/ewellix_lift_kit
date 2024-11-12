@@ -201,21 +201,22 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
     dt = (time - last_time).seconds();
   }
 
-  // if we have a nan value, don't command a new position, and set velocity to zero
-  if (isnan(hw_commands_positions_[0])){
+  // if we have a nan value, don't command a new position, and set velocity to
+  // zero
+  if (isnan(hw_commands_positions_[0])) {
     desired_vel_ema_->add_value(0);
     srl_.desired_velocity_ = desired_vel_ema_->get_average();
-  }
-  else{
+  } else {
     static bool warned_ = false;
     if (hw_commands_positions_[0] > height_limit) {
       srl_.desired_pose_ = height_limit;
       if (!warned_) {
-        RCLCPP_WARN(rclcpp::get_logger("LiftkitHardwareInterface"),
-                    "Commanded Height of %0.3f was greater than height limit of "
-                    "%0.3f! height "
-                    "being clamped.",
-                    hw_commands_positions_[0], height_limit);
+        RCLCPP_WARN(
+            rclcpp::get_logger("LiftkitHardwareInterface"),
+            "Commanded Height of %0.3f was greater than height limit of "
+            "%0.3f! height "
+            "being clamped.",
+            hw_commands_positions_[0], height_limit);
         warned_ = true;
       }
     } else if (hw_commands_positions_[0] <= height_limit && warned_) {
@@ -230,7 +231,6 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
     desired_vel_ema_->add_value(raw_velocity);
     srl_.desired_velocity_ = desired_vel_ema_->get_average();
   }
-
 
   // store current values to reference next loop
   last_time = time;

@@ -88,8 +88,9 @@ public:
   DIR curr_dir; // current direction overall
   DIR last_dir; // last direction overall
 
-  int cycles_to_wait; // number of cycles to wait before changing directions. If you switch
-                      // directions to quickly, it will not update properly
+  int cycles_to_wait; // number of cycles to wait before changing directions. If
+                      // you switch directions to quickly, it will not update
+                      // properly
 
   // Command and Data Handling
   vector<unsigned char> intToBytes(int paramInt);
