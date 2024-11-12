@@ -30,8 +30,9 @@ constexpr int LIFT_CMD_NO_MOVE = 2;
 // found that when moving up at 100 speed, we move at about 0.035 m/s
 // which corresponds to a speed_cmd = desired_Speed * 3222
 constexpr double FF_SCALE = 3222;
-// Moving down needs 70% of the effort because it has gravity working with it
-constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.3;
+// Moving down needs a lot less effort for similar tracking because
+// it has gravity working with it
+constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.6;
 // controller gains
 constexpr double Kp = 4000;
 constexpr double Kd = 300.0;
@@ -52,7 +53,7 @@ SerialComTlt::SerialComTlt()
     : run_(true), debug_(false), stop_loop_(false), com_started_(false),
       height_limit_(0.7),
       desired_pose_(std::numeric_limits<double>::quiet_NaN()),
-      desired_velocity_(std::numeric_limits<double>::quiet_NaN()),
+      desired_velocity_(0.0),
       current_pose_(0.0), previous_pose_(0.0), current_velocity_(0.0),
       commanded_velocity_(0.0), mot1_pose_(0), mot2_pose_(0), mot1_pose_m_(0),
       mot2_pose_m_(0), mot_ticks_(0), lock_(), serial_tlt_(), pid_(), 

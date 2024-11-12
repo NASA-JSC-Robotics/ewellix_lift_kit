@@ -113,9 +113,6 @@ CallbackReturn LiftkitHardwareInterface::on_activate(
   for (unsigned int i = 0; i < hw_states_extra_.size(); ++i) {
     hw_states_extra_[i] = 0;
   }
-  for (unsigned int i = 0; i < hw_commands_positions_.size(); ++i) {
-    hw_commands_positions_[i] = 0;
-  }
 
   // // Trying to instantiate the driver
   try {
@@ -204,28 +201,36 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
     dt = (time - last_time).seconds();
   }
 
-  static bool warned_ = false;
-  if (hw_commands_positions_[0] > height_limit) {
-    srl_.desired_pose_ = height_limit;
-    if (!warned_) {
-      RCLCPP_WARN(rclcpp::get_logger("LiftkitHardwareInterface"),
-                  "Commanded Height of %0.3f was greater than height limit of "
-                  "%0.3f! height "
-                  "being clamped.",
-                  hw_commands_positions_[0], height_limit);
-      warned_ = true;
+  // if we have a nan value, don't command a new position, and set velocity to zero
+  if (isnan(hw_commands_positions_[0])){
+    desired_vel_ema_->add_value(0);
+    srl_.desired_velocity_ = desired_vel_ema_->get_average();
+  }
+  else{
+    static bool warned_ = false;
+    if (hw_commands_positions_[0] > height_limit) {
+      srl_.desired_pose_ = height_limit;
+      if (!warned_) {
+        RCLCPP_WARN(rclcpp::get_logger("LiftkitHardwareInterface"),
+                    "Commanded Height of %0.3f was greater than height limit of "
+                    "%0.3f! height "
+                    "being clamped.",
+                    hw_commands_positions_[0], height_limit);
+        warned_ = true;
+      }
+    } else if (hw_commands_positions_[0] <= height_limit && warned_) {
+      warned_ = false;
+      srl_.desired_pose_ = hw_commands_positions_[0];
+    } else {
+      srl_.desired_pose_ = hw_commands_positions_[0];
     }
-  } else if (hw_commands_positions_[0] <= height_limit && warned_) {
-    warned_ = false;
-    srl_.desired_pose_ = hw_commands_positions_[0];
-  } else {
-    srl_.desired_pose_ = hw_commands_positions_[0];
+
+    // filter the desired velocity and set it in the ewellix class
+    double raw_velocity = (srl_.desired_pose_ - last_commanded_position) / dt;
+    desired_vel_ema_->add_value(raw_velocity);
+    srl_.desired_velocity_ = desired_vel_ema_->get_average();
   }
 
-  // filter the desired velocity and set it in the ewellix class
-  double raw_velocity = (srl_.desired_pose_ - last_commanded_position) / dt;
-  desired_vel_ema_->add_value(raw_velocity);
-  srl_.desired_velocity_ = desired_vel_ema_->get_average();
 
   // store current values to reference next loop
   last_time = time;
