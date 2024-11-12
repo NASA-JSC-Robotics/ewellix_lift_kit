@@ -12,9 +12,9 @@ constexpr int TICKS_OFFSET = 10;
 // hex values for ewellix specific params
 constexpr int MOT1 = 0x00;
 constexpr int MOT2 = 0x01;
-constexpr int MOT1_ADDR = 0x11;
-constexpr int MOT2_ADDR = 0x12;
+constexpr unsigned char MOT1_ADDR = 0x11;
 constexpr int MOT_ALL = 0x07;
+constexpr unsigned char MOT2_ADDR = 0x12;
 constexpr int UP = 0x02;
 constexpr int DOWN = 0x01;
 constexpr int UNUSED = 0Xff;
@@ -31,7 +31,7 @@ constexpr int LIFT_CMD_NO_MOVE = 2;
 // which corresponds to a speed_cmd = desired_Speed * 3222
 constexpr double FF_SCALE = 3222;
 // Moving down needs 70% of the effort because it has gravity working with it
-constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.7;
+constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.3;
 // controller gains
 constexpr double Kp = 4000;
 constexpr double Kd = 300.0;
@@ -46,7 +46,7 @@ constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
 // liftkit will not move, and it will end up in an error state until you
 // force it to change directions, which can be a hassle.
 std::vector<int> SPEED_LOW_LIMIT_UP = {32, 32};   // As percentage of 100
-std::vector<int> SPEED_LOW_LIMIT_DOWN = {32, 32}; // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_DOWN = {29, 29}; // As percentage of 100
 
 SerialComTlt::SerialComTlt()
     : run_(true), debug_(false), stop_loop_(false), com_started_(false),
@@ -55,10 +55,11 @@ SerialComTlt::SerialComTlt()
       desired_velocity_(std::numeric_limits<double>::quiet_NaN()),
       current_pose_(0.0), previous_pose_(0.0), current_velocity_(0.0),
       commanded_velocity_(0.0), mot1_pose_(0), mot2_pose_(0), mot1_pose_m_(0),
-      mot2_pose_m_(0), mot_ticks_(0), curr_dir(MOVING_STOPPED),
-      last_dir(MOVING_STOPPED), speed_commands_(2, LIFT_CMD_NO_MOVE),
-      curr_dirs_(2, DIR::MOVING_STOPPED), last_dirs_(2, DIR::MOVING_STOPPED),
-      should_moves_(2, 0), stoppeds_(2, false), num_cycles_waiteds_(2, 0) {}
+      mot2_pose_m_(0), mot_ticks_(0), lock_(), serial_tlt_(), pid_(), 
+      speed_commands_(2, LIFT_CMD_NO_MOVE), curr_dirs_(2, DIR::MOVING_STOPPED), 
+      last_dirs_(2, DIR::MOVING_STOPPED), should_moves_(2, 0), stoppeds_(2, false), 
+      num_cycles_waiteds_(2, 0), curr_dir(MOVING_STOPPED), last_dir(MOVING_STOPPED),
+      cycles_to_wait(2) {}
 
 SerialComTlt::~SerialComTlt() {
   stop();
@@ -371,18 +372,18 @@ void SerialComTlt::comLoop() {
       // if we are moving up, and mot1 is < (0.35 - epsilon), use mot1
       // otherwise use mot2
       if (curr_dirs_[0] == MOVING_UP) {
-        if (mot2_pose_m_ < (height_limit_ / 2 - max_height_epsilon))
-          speed_commands_[1] = speed_command;
-        else
+        if (mot1_pose_m_ < (height_limit_ / 2 - max_height_epsilon))
           speed_commands_[0] = speed_command;
+        else
+          speed_commands_[1] = speed_command;
       }
       // if we are moving down, and mot2 is < (0 + epsilon), use mot1
       // otherwise use mot2
       else if (curr_dirs_[0] == MOVING_DOWN) {
-        if (mot1_pose_m_ < (0 + max_height_epsilon))
-          speed_commands_[1] = speed_command;
-        else
+        if (mot2_pose_m_ < (0 + max_height_epsilon))
           speed_commands_[0] = speed_command;
+        else
+          speed_commands_[1] = speed_command;
       }
 
       // loop over each of the motors to perform the same logic of what state
