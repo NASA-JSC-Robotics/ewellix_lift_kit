@@ -53,14 +53,13 @@ SerialComTlt::SerialComTlt()
     : run_(true), debug_(false), stop_loop_(false), com_started_(false),
       height_limit_(0.7),
       desired_pose_(std::numeric_limits<double>::quiet_NaN()),
-      desired_velocity_(0.0),
-      current_pose_(0.0), previous_pose_(0.0), current_velocity_(0.0),
-      commanded_velocity_(0.0), mot1_pose_(0), mot2_pose_(0), mot1_pose_m_(0),
-      mot2_pose_m_(0), mot_ticks_(0), lock_(), serial_tlt_(), pid_(), 
-      speed_commands_(2, LIFT_CMD_NO_MOVE), curr_dirs_(2, DIR::MOVING_STOPPED), 
-      last_dirs_(2, DIR::MOVING_STOPPED), should_moves_(2, 0), stoppeds_(2, false), 
-      num_cycles_waiteds_(2, 0), curr_dir(MOVING_STOPPED), last_dir(MOVING_STOPPED),
-      cycles_to_wait(2) {}
+      desired_velocity_(0.0), current_pose_(0.0), previous_pose_(0.0),
+      current_velocity_(0.0), commanded_velocity_(0.0), mot1_pose_(0),
+      mot2_pose_(0), mot1_pose_m_(0), mot2_pose_m_(0), mot_ticks_(0), lock_(),
+      serial_tlt_(), pid_(), speed_commands_(2, LIFT_CMD_NO_MOVE),
+      curr_dirs_(2, DIR::MOVING_STOPPED), last_dirs_(2, DIR::MOVING_STOPPED),
+      should_moves_(2, 0), stoppeds_(2, false), num_cycles_waiteds_(2, 0),
+      curr_dir(MOVING_STOPPED), last_dir(MOVING_STOPPED), cycles_to_wait(2) {}
 
 SerialComTlt::~SerialComTlt() {
   stop();
