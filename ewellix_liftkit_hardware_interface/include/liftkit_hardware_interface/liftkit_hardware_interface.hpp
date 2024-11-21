@@ -84,12 +84,12 @@ protected:
   private:
     double alpha;
     double ema;
+    bool first_time;
 
   public:
-    EMA(double alpha) : alpha(alpha), ema(0) {}
+    EMA(double alpha) : alpha(alpha), ema(0), first_time(true) {}
 
     void add_value(double value) {
-      static bool first_time = true;
       if (first_time) {
         ema = value;
         first_time = false;
