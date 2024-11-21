@@ -43,7 +43,7 @@ CallbackReturn LiftkitHardwareInterface::on_init(
 
   first_loop = true;
 
-  desired_vel_ema_ = std::make_shared<EMA>(0.9);
+  desired_vel_ema_ = std::make_shared<EMA>(ema_filter_coeff);
   return CallbackReturn::SUCCESS;
 }
 

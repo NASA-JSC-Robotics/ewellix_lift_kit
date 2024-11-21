@@ -79,6 +79,9 @@ protected:
   double last_commanded_position; // commanded position last write loop
   rclcpp::Time last_time;         // time recorded from previous write loop
 
+  double ema_filter_coeff =
+      0.9; // filter coefficient for EMA, has to be in (0,1)
+
   // exponential moving average class to help filter velocity
   class EMA {
   private:
