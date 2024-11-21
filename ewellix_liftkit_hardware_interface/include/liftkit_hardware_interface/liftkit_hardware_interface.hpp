@@ -88,12 +88,24 @@ protected:
     double alpha;
     double ema;
     bool first_time;
+    bool valid_filter;
 
   public:
-    EMA(double alpha) : alpha(alpha), ema(0), first_time(true) {}
+    EMA(double alpha)
+        : alpha(alpha), ema(0), first_time(true), valid_filter(true) {
+      if (alpha <= 0 || alpha >= 1.0) {
+        RCLCPP_ERROR(
+            rclcpp::get_logger("LiftkitHardwareInterface"),
+            "Alpha for exponential moving average must be between 0 and 1. The "
+            "filter will just return the most recent value.");
+        valid_filter = false;
+      }
+    }
 
     void add_value(double value) {
-      if (first_time) {
+      if (!valid_filter) {
+        ema = value;
+      } else if (first_time) {
         ema = value;
         first_time = false;
       } else {
