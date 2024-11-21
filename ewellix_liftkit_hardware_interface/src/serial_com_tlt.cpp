@@ -51,7 +51,7 @@ std::vector<int> SPEED_LOW_LIMIT_DOWN = {29, 29}; // As percentage of 100
 
 SerialComTlt::SerialComTlt()
     : run_(true), debug_(false), stop_loop_(false), com_started_(false),
-      height_limit_(0.7),
+      first_time_(true), height_limit_(0.7),
       desired_pose_(std::numeric_limits<double>::quiet_NaN()),
       desired_velocity_(0.0), current_pose_(0.0), previous_pose_(0.0),
       current_velocity_(0.0), commanded_velocity_(0.0), mot1_pose_(0),
@@ -332,8 +332,7 @@ void SerialComTlt::comLoop() {
       // get the position data from the liftkit for ROS
       getColumnSize();
 
-      static bool first_time = true;
-      if (first_time) {
+      if (first_time_) {
         desired_pose_ = current_pose_;
       }
 
@@ -413,7 +412,7 @@ void SerialComTlt::comLoop() {
         // we need to stop if we (1) have a should be stopped flag and we are
         // not currently stopped or (2) it is the first time through
         if ((!should_moves_[motor_index] && !stoppeds_[motor_index]) ||
-            first_time) {
+            first_time_) {
           if (motor == MOTOR_NUM::MOTOR_ONE)
             stopMot1();
           else
@@ -447,7 +446,7 @@ void SerialComTlt::comLoop() {
       }
 
       // no longer the first loop
-      first_time = false;
+      first_time_ = false;
 
       // update persistent values for next iteration
       last_dirs_ = curr_dirs_;

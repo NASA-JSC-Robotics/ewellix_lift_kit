@@ -41,6 +41,8 @@ CallbackReturn LiftkitHardwareInterface::on_init(
   port = system_info.hardware_parameters["com_port"];
   height_limit = stof(system_info.hardware_parameters["height_limit"]);
 
+  first_loop = true;
+
   desired_vel_ema_ = std::make_shared<EMA>(0.9);
   return CallbackReturn::SUCCESS;
 }
@@ -186,15 +188,10 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
   (void)time;
   (void)period;
 
-  // local variables to keep track of from iteration to iteration
-  static bool first_loop = true;
-  static double dt;
-  static rclcpp::Time last_time;
-  static double last_commanded_position = hw_commands_positions_[0];
-
   // if it is the first loop, there is no way to calculate dt, so use
   // the expected period instead. Otherwise, calculate dt each loop
   if (first_loop) {
+    last_commanded_position = hw_commands_positions_[0];
     dt = period.seconds();
     first_loop = false;
   } else {
@@ -207,7 +204,7 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
     desired_vel_ema_->add_value(0);
     srl_.desired_velocity_ = desired_vel_ema_->get_average();
   } else {
-    static bool warned_ = false;
+    warned_ = false;
     if (hw_commands_positions_[0] > height_limit) {
       srl_.desired_pose_ = height_limit;
       if (!warned_) {

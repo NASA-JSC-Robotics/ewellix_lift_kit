@@ -72,6 +72,13 @@ protected:
   SerialComTlt srl_;
   thread com_thread_;
 
+  bool first_loop; // whether or not this is the first run through write
+  bool warned_;    // whether or not the user has been warned
+
+  double dt;                      // delta time from last loop to this loop
+  double last_commanded_position; // commanded position last write loop
+  rclcpp::Time last_time;         // time recorded from previous write loop
+
   // exponential moving average class to help filter velocity
   class EMA {
   private:

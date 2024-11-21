@@ -55,6 +55,7 @@ public:
   bool debug_;     // prints out messages if we are debugging
   bool stop_loop_; // handles when to break when getting feedback
   bool com_started_; // handles when to exit communication loop
+  bool first_time_;  // whether this is the first time through the loop
 
   double height_limit_; // height limit for stack, set in hwi params
 
