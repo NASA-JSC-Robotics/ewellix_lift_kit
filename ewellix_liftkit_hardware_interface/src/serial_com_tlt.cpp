@@ -32,12 +32,12 @@ constexpr int LIFT_CMD_NO_MOVE = 2;
 constexpr double FF_SCALE = 3222;
 // Moving down needs a lot less effort for similar tracking because
 // it has gravity working with it
-constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.6;
+constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.45;
 // controller gains
 constexpr double Kp = 4000;
-constexpr double Kd = 300.0;
-constexpr double Ki = 2000.0;
-constexpr double Ki_max = 29.0;
+constexpr double Kd = 200.0;
+constexpr double Ki = 4000.0;
+constexpr double Ki_max = 10.0;
 constexpr double Ki_min = -1.0 * Ki_max / UP_TO_DOWN_SPEED_FACTOR;
 constexpr bool antiwindup = true;
 
@@ -354,7 +354,7 @@ void SerialComTlt::comLoop() {
       // speed - I estimated it needs about 70% of the command to move
       // at the same speed.
       if (speed_command < 0)
-        speed_command *= UP_TO_DOWN_SPEED_FACTOR;
+        speed_command = static_cast<int>(static_cast<double>(speed_command) * UP_TO_DOWN_SPEED_FACTOR);
       commanded_velocity_ = speed_command;
 
       // set the current moving direction based on
