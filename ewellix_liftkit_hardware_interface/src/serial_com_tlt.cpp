@@ -354,7 +354,8 @@ void SerialComTlt::comLoop() {
       // speed - I estimated it needs about 70% of the command to move
       // at the same speed.
       if (speed_command < 0)
-        speed_command = static_cast<int>(static_cast<double>(speed_command) * UP_TO_DOWN_SPEED_FACTOR);
+        speed_command = static_cast<int>(static_cast<double>(speed_command) *
+                                         UP_TO_DOWN_SPEED_FACTOR);
       commanded_velocity_ = speed_command;
 
       // set the current moving direction based on

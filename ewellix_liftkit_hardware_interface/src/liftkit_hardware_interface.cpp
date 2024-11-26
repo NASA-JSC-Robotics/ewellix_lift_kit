@@ -204,7 +204,7 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
     desired_vel_ema_->add_value(0);
     srl_.desired_velocity_ = desired_vel_ema_->get_average();
   } else {
-    if (first_non_nan_loop){
+    if (first_non_nan_loop) {
       last_commanded_position = hw_commands_positions_[0];
       first_non_nan_loop = false;
     }
