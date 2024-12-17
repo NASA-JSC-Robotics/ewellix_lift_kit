@@ -58,6 +58,14 @@ def generate_launch_description():
     # other args
     declared_arguments.append(
         DeclareLaunchArgument(
+            "x_offset",
+            default_value="0.5",
+            description="Distance between two liftkits, if there's two.",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "rviz",
             default_value="true",
             description="launch rviz",
@@ -70,6 +78,7 @@ def generate_launch_description():
     com_port = LaunchConfiguration("com_port")
     rviz = LaunchConfiguration("rviz")
     height_limit = LaunchConfiguration("height_limit")
+    x_offset = LaunchConfiguration("x_offset")
 
     robot_description_content = Command(
         [
@@ -93,6 +102,9 @@ def generate_launch_description():
             " ",
             "com_port:=",
             com_port,
+            " ",
+            "x_offset:=",
+            x_offset,
             " ",
             "height_limit:=",
             height_limit,
