@@ -34,7 +34,7 @@
         <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
           <command_interface name="position">
             <param name="min">0</param>
-            <param name="max">0.7</param>
+            <param name="height_limit">${height_limit}</param>
           </command_interface>
           <state_interface name="position"/>
           <state_interface name="velocity"/>
