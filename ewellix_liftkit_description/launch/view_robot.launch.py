@@ -85,7 +85,7 @@ def generate_launch_description():
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift_700mm.urdf.xacro"]
+                [FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift.urdf.xacro"]
             ),
             " ",
             "name:=",
