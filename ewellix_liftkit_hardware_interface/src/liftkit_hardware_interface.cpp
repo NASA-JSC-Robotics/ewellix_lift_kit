@@ -32,6 +32,9 @@ CallbackReturn LiftkitHardwareInterface::on_init(
                                numeric_limits<double>::quiet_NaN());
   hw_states_robot_ready_.resize(info_.joints.size(),
                                 numeric_limits<double>::quiet_NaN());
+  // here, we look at the total number of states (position + velocity + ready +
+  // extras) and subtract off the ones that are always there (position,
+  // velocity, and ready) to just get the size of the extras
   hw_states_extra_.resize(info_.joints[0].state_interfaces.size() - 3,
                           numeric_limits<double>::quiet_NaN());
   hw_commands_positions_.resize(info_.joints.size(),
