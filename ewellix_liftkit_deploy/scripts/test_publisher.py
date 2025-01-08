@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rclpy
 from rclpy.node import Node
@@ -10,7 +10,9 @@ class MinimalPublisher(Node):
 
     def __init__(self, desired_position, move_time):
         super().__init__("minimal_publisher")
-        self.publisher_ = self.create_publisher(JointTrajectory, "/position_trajectory_controller/joint_trajectory", 10)
+        self.publisher_ = self.create_publisher(
+            JointTrajectory, "/lift_position_trajectory_controller/joint_trajectory", 10
+        )
         timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.i = 0

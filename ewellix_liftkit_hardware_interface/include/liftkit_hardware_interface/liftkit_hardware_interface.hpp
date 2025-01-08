@@ -62,6 +62,9 @@ protected:
   std::vector<double> hw_states_velocities_;
   std::vector<double> hw_states_robot_ready_;
 
+  // Extra states used for debugging. Can remove in the future if desired
+  std::vector<double> hw_states_extra_; // desired velocity, commanded velocity
+
   std::vector<double> hw_commands_positions_;
 
   hardware_interface::HardwareInfo system_info;
@@ -70,6 +73,53 @@ protected:
   double previous_position_;
   SerialComTlt srl_;
   thread com_thread_;
+
+  bool first_loop;         // whether or not this is the first run through write
+  bool first_non_nan_loop; // whether or not this is the first run through write
+  bool warned_;            // whether or not the user has been warned
+
+  double dt;                      // delta time from last loop to this loop
+  double last_commanded_position; // commanded position last write loop
+  rclcpp::Time last_time;         // time recorded from previous write loop
+
+  double ema_filter_coeff =
+      0.9; // filter coefficient for EMA, has to be in (0,1)
+
+  // exponential moving average class to help filter velocity
+  class EMA {
+  private:
+    double alpha;
+    double ema;
+    bool first_time;
+    bool valid_filter;
+
+  public:
+    EMA(double alpha)
+        : alpha(alpha), ema(0), first_time(true), valid_filter(true) {
+      if (alpha <= 0 || alpha >= 1.0) {
+        RCLCPP_ERROR(
+            rclcpp::get_logger("LiftkitHardwareInterface"),
+            "Alpha for exponential moving average must be between 0 and 1. The "
+            "filter will just return the most recent value.");
+        valid_filter = false;
+      }
+    }
+
+    void add_value(double value) {
+      if (!valid_filter) {
+        ema = value;
+      } else if (first_time) {
+        ema = value;
+        first_time = false;
+      } else {
+        ema = alpha * value + (1 - alpha) * ema;
+      }
+    }
+
+    double get_average() const { return ema; }
+  };
+
+  std::shared_ptr<EMA> desired_vel_ema_;
 };
 } // namespace liftkit_hardware_interface
 

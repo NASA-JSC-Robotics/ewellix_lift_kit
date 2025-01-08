@@ -26,19 +26,28 @@ CallbackReturn LiftkitHardwareInterface::on_init(
     return CallbackReturn::ERROR;
   }
 
-  // TODO: check for the right number of joints
   hw_states_positions_.resize(info_.joints.size(),
                               numeric_limits<double>::quiet_NaN());
   hw_states_velocities_.resize(info_.joints.size(),
                                numeric_limits<double>::quiet_NaN());
   hw_states_robot_ready_.resize(info_.joints.size(),
                                 numeric_limits<double>::quiet_NaN());
+  // here, we look at the total number of states (position + velocity + ready +
+  // extras) and subtract off the ones that are always there (position,
+  // velocity, and ready) to just get the size of the extras
+  hw_states_extra_.resize(info_.joints[0].state_interfaces.size() - 3,
+                          numeric_limits<double>::quiet_NaN());
   hw_commands_positions_.resize(info_.joints.size(),
                                 numeric_limits<double>::quiet_NaN());
   // signal(SIGINT, signal_callback_handler);
   system_info = info_;
   port = system_info.hardware_parameters["com_port"];
   height_limit = stof(system_info.hardware_parameters["height_limit"]);
+
+  first_loop = true;
+  first_non_nan_loop = true;
+
+  desired_vel_ema_ = std::make_shared<EMA>(ema_filter_coeff);
   return CallbackReturn::SUCCESS;
 }
 
@@ -77,6 +86,12 @@ LiftkitHardwareInterface::export_state_interfaces() {
         &hw_states_robot_ready_[i]));
   }
 
+  for (uint i = 0; i < info_.joints[0].state_interfaces.size() - 3; ++i) {
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints[0].name, info_.joints[0].state_interfaces[i + 3].name,
+        &hw_states_extra_[i]));
+  }
+
   return state_interfaces;
 }
 
@@ -101,8 +116,8 @@ CallbackReturn LiftkitHardwareInterface::on_activate(
     hw_states_velocities_[i] = 0;
     hw_states_robot_ready_[i] = 0;
   }
-  for (unsigned int i = 0; i < hw_commands_positions_.size(); ++i) {
-    hw_commands_positions_[i] = 0;
+  for (unsigned int i = 0; i < hw_states_extra_.size(); ++i) {
+    hw_states_extra_[i] = 0;
   }
 
   // // Trying to instantiate the driver
@@ -149,6 +164,9 @@ LiftkitHardwareInterface::read(const rclcpp::Time &time,
   hw_states_velocities_[0] = srl_.current_velocity_;
   hw_states_robot_ready_[0] = 1.0;
 
+  hw_states_extra_[0] = srl_.desired_velocity_;
+  hw_states_extra_[1] = srl_.commanded_velocity_;
+
   // There is an issue when homing the robot that causes the position to read as
   // an epsilon less than 0 (e.g. -0.001), violating joint limits. If that is
   // the case we simply round the pose to 0 from the HW interface. Otherwise,
@@ -174,21 +192,54 @@ LiftkitHardwareInterface::write(const rclcpp::Time &time,
   (void)time;
   (void)period;
 
-  static bool warned_ = false;
-  if (hw_commands_positions_[0] > height_limit) {
-    srl_.current_target_ = height_limit;
-    if (!warned_) {
-      RCLCPP_WARN(rclcpp::get_logger("RailEHardwareInterface"),
-                  "Commanded Height was greater than height limit! height "
-                  "being clamped.");
-      warned_ = true;
-    }
-  } else if (hw_commands_positions_[0] <= height_limit && warned_) {
-    warned_ = false;
-    srl_.current_target_ = hw_commands_positions_[0];
+  // if it is the first loop, there is no way to calculate dt, so use
+  // the expected period instead. Otherwise, calculate dt each loop
+  if (first_loop) {
+    dt = period.seconds();
+    first_loop = false;
   } else {
-    srl_.current_target_ = hw_commands_positions_[0];
+    dt = (time - last_time).seconds();
   }
+
+  // if we have a nan value, don't command a new position, and set velocity to
+  // zero
+  if (isnan(hw_commands_positions_[0])) {
+    desired_vel_ema_->add_value(0);
+    srl_.desired_velocity_ = desired_vel_ema_->get_average();
+  } else {
+    if (first_non_nan_loop) {
+      last_commanded_position = hw_commands_positions_[0];
+      first_non_nan_loop = false;
+    }
+    warned_ = false;
+    if (hw_commands_positions_[0] > height_limit) {
+      srl_.desired_pose_ = height_limit;
+      if (!warned_) {
+        RCLCPP_WARN(
+            rclcpp::get_logger("LiftkitHardwareInterface"),
+            "Commanded Height of %0.3f was greater than height limit of "
+            "%0.3f! height "
+            "being clamped.",
+            hw_commands_positions_[0], height_limit);
+        warned_ = true;
+      }
+    } else if (hw_commands_positions_[0] <= height_limit && warned_) {
+      warned_ = false;
+      srl_.desired_pose_ = hw_commands_positions_[0];
+    } else {
+      srl_.desired_pose_ = hw_commands_positions_[0];
+    }
+
+    // filter the desired velocity and set it in the ewellix class
+    double raw_velocity = (srl_.desired_pose_ - last_commanded_position) / dt;
+    desired_vel_ema_->add_value(raw_velocity);
+    srl_.desired_velocity_ = desired_vel_ema_->get_average();
+  }
+
+  // store current values to reference next loop
+  last_time = time;
+  last_commanded_position = srl_.desired_pose_;
+
   return hardware_interface::return_type::OK;
 }
 } // namespace liftkit_hardware_interface
