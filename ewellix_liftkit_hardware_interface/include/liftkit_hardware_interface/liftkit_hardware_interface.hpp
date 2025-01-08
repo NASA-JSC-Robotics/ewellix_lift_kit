@@ -10,6 +10,7 @@
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "serial/serial.h"
 #include "visibility_control.h"
+#include "rclcpp/rclcpp.hpp"
 
 namespace liftkit_hardware_interface {
 class LiftkitHardwareInterface : public hardware_interface::ActuatorInterface {
