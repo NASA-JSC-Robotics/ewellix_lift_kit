@@ -6,6 +6,7 @@
 #include "hardware_interface/types/hardware_interface_return_values.hpp"
 #include "liftkit_hardware_interface/serial_com_tlt.h"
 #include "rclcpp/macros.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "rclcpp/time.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "serial/serial.h"
