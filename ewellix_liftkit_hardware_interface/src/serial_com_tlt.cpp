@@ -431,7 +431,7 @@ void SerialComTlt::comLoop() {
             else
               moveMot2Up();
           }
-          // if speed is greater than 0, we need to be commanding a move up
+          // if speed is less than 0, we need to be commanding a move down
           else {
             if (motor == MOTOR_NUM::MOTOR_ONE)
               moveMot1Down();
