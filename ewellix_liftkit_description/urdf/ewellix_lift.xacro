@@ -10,7 +10,7 @@
     height_limit:=0.7
     omit_plates:=false
     is_700:=true
-    is_500:=true
+    is_500:=false
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
     *origin
@@ -80,7 +80,7 @@
    
 
      
-    <!-- <xacro:if value="${is_500}">
+    <xacro:if value="${is_500}">
     <xacro:property name="height_limit" value="0.5"/>
 
     <xacro:property name="base_mass_value" value="1.7383784"/>
@@ -92,10 +92,10 @@
     <xacro:property name="lift_base_link_iyz" value="0.0" scope="parent"/>
     <xacro:property name="lift_base_link_izz" value="7.0031710E-03" scope="parent"/>
 
-    <xacro:property name="base_to_lower_origin_z" value="0.2532"/>
+    <xacro:property name="base_to_lower_origin_z" value="0.2645"/>
 
     <xacro:property name="lower_mass_value" value="6.746306"/>
-    <xacro:property name="lower_box_size" value="0.163 0.163 0.4764"/>
+    <xacro:property name="lower_box_size" value="0.163 0.163 0.4744"/>
     <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low_500mm.stl"/>
     <xacro:property name="lift_lower_link_ixx" value="1.577769E-07" scope="parent"/>
     <xacro:property name="lift_lower_link_ixy" value="0.0" scope="parent"/>
@@ -132,7 +132,7 @@
     <xacro:property name="lift_top_link_iyy" value="1.280362E-02" scope="parent"/>
     <xacro:property name="lift_top_link_iyz" value="1.967468E-09" scope="parent"/>
     <xacro:property name="lift_top_link_izz" value="7.048366E-03" scope="parent"/>
-    </xacro:if> -->
+    </xacro:if>
 
   <xacro:unless value="${not omit_plates}">
       <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_lower_link"/>
