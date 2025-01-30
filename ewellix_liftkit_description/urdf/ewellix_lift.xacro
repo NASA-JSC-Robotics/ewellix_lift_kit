@@ -24,114 +24,114 @@
 
     
     <xacro:if value="${is_700}">
-    <xacro:property name="height_limit" value="0.7"/>
+      <xacro:property name="height_limit" value="0.7"/>
     
 
-    <xacro:property name="base_mass_value" value="1.7383784"/>
-    <xacro:property name="base_box_size" value="0.220 0.200 0.015"/>
-    <xacro:property name="lift_base_link_ixx" value="5.7788770e-03" scope="parent"/>
-    <xacro:property name="lift_base_link_ixy" value="0.0" scope="parent"/>
-    <xacro:property name="lift_base_link_ixz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_base_link_iyy" value="7.0031715e-03" scope="parent"/>
-    <xacro:property name="lift_base_link_iyz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_base_link_izz" value="1.2717018e-02" scope="parent"/>
+      <xacro:property name="base_mass_value" value="1.7383784"/>
+      <xacro:property name="base_box_size" value="0.220 0.200 0.015"/>
+      <xacro:property name="lift_base_link_ixx" value="5.7788770e-03" scope="parent"/>
+      <xacro:property name="lift_base_link_ixy" value="0.0" scope="parent"/>
+      <xacro:property name="lift_base_link_ixz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_base_link_iyy" value="7.0031715e-03" scope="parent"/>
+      <xacro:property name="lift_base_link_iyz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_base_link_izz" value="1.2717018e-02" scope="parent"/>
 
-    <xacro:property name="base_to_lower_origin_z" value="0.295"/>
+      <xacro:property name="base_to_lower_origin_z" value="0.295"/>
 
-    <xacro:property name="lower_mass_value" value="1.9521070e+01"/>
-    <xacro:property name="lower_box_size" value="0.163 0.163 0.575"/>
-    <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low.dae"/>
-    <xacro:property name="lift_lower_link_ixx" value="0.46604111" scope="parent"/>
-    <xacro:property name="lift_lower_link_ixy" value="0.0" scope="parent"/>
-    <xacro:property name="lift_lower_link_ixz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_lower_link_iyy" value="0.46480515" scope="parent"/>
-    <xacro:property name="lift_lower_link_iyz" value="-0.002668667" scope="parent"/>
-    <xacro:property name="lift_lower_link_izz" value="0.1561" scope="parent"/>
+      <xacro:property name="lower_mass_value" value="1.9521070e+01"/>
+      <xacro:property name="lower_box_size" value="0.163 0.163 0.575"/>
+      <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low.dae"/>
+      <xacro:property name="lift_lower_link_ixx" value="0.46604111" scope="parent"/>
+      <xacro:property name="lift_lower_link_ixy" value="0.0" scope="parent"/>
+      <xacro:property name="lift_lower_link_ixz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_lower_link_iyy" value="0.46480515" scope="parent"/>
+      <xacro:property name="lift_lower_link_iyz" value="-0.002668667" scope="parent"/>
+      <xacro:property name="lift_lower_link_izz" value="0.1561" scope="parent"/>
 
-    <xacro:property name="middle_mass_value" value="1.5593303e+01"/>
-    <xacro:property name="middle_box_size" value="0.146 0.146 0.483"/>
-    <xacro:property name="middle_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_mid.dae"/>
-    <xacro:property name="lift_middle_link_ixx" value="0.34930648" scope="parent"/>
-    <xacro:property name="lift_middle_link_ixy" value="0.0" scope="parent"/>
-    <xacro:property name="lift_middle_link_ixz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_middle_link_iyy" value="0.34930648" scope="parent"/>
-    <xacro:property name="lift_middle_link_iyz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_middle_link_izz" value="0.095393471" scope="parent"/>
+      <xacro:property name="middle_mass_value" value="1.5593303e+01"/>
+      <xacro:property name="middle_box_size" value="0.146 0.146 0.483"/>
+      <xacro:property name="middle_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_mid.dae"/>
+      <xacro:property name="lift_middle_link_ixx" value="0.34930648" scope="parent"/>
+      <xacro:property name="lift_middle_link_ixy" value="0.0" scope="parent"/>
+      <xacro:property name="lift_middle_link_ixz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_middle_link_iyy" value="0.34930648" scope="parent"/>
+      <xacro:property name="lift_middle_link_iyz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_middle_link_izz" value="0.095393471" scope="parent"/>
 
-    <xacro:property name="higher_mass_value" value="1.5166778e+01"/>
-    <xacro:property name="higher_box_size" value="0.129 0.129 0.488"/>
-    <xacro:property name="higher_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_high.dae"/>
-    <xacro:property name="lift_higher_link_ixx" value="0.35552099" scope="parent"/>
-    <xacro:property name="lift_higher_link_ixy" value="9.6314989e-6" scope="parent"/>
-    <xacro:property name="lift_higher_link_ixz" value="2.284786e-5" scope="parent"/>
-    <xacro:property name="lift_higher_link_iyy" value="0.35552876" scope="parent"/>
-    <xacro:property name="lift_higher_link_iyz" value="5.4910201e-5" scope="parent"/>
-    <xacro:property name="lift_higher_link_izz" value="0.069925583" scope="parent"/>
+      <xacro:property name="higher_mass_value" value="1.5166778e+01"/>
+      <xacro:property name="higher_box_size" value="0.129 0.129 0.488"/>
+      <xacro:property name="higher_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_high.dae"/>
+      <xacro:property name="lift_higher_link_ixx" value="0.35552099" scope="parent"/>
+      <xacro:property name="lift_higher_link_ixy" value="9.6314989e-6" scope="parent"/>
+      <xacro:property name="lift_higher_link_ixz" value="2.284786e-5" scope="parent"/>
+      <xacro:property name="lift_higher_link_iyy" value="0.35552876" scope="parent"/>
+      <xacro:property name="lift_higher_link_iyz" value="5.4910201e-5" scope="parent"/>
+      <xacro:property name="lift_higher_link_izz" value="0.069925583" scope="parent"/>
 
-    <xacro:property name="top_mass_value" value="4.9139525"/>
-    <xacro:property name="top_box_size" value="0.200 0.220 0.015"/>
-    <xacro:property name="lift_top_link_ixx" value="0.02015548" scope="parent"/>
-    <xacro:property name="lift_top_link_ixy" value="-2.281101e-5" scope="parent"/>
-    <xacro:property name="lift_top_link_ixz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_top_link_iyy" value="0.01664141" scope="parent"/>
-    <xacro:property name="lift_top_link_iyz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_top_link_izz" value="0.03661307" scope="parent"/>
+      <xacro:property name="top_mass_value" value="4.9139525"/>
+      <xacro:property name="top_box_size" value="0.200 0.220 0.015"/>
+      <xacro:property name="lift_top_link_ixx" value="0.02015548" scope="parent"/>
+      <xacro:property name="lift_top_link_ixy" value="-2.281101e-5" scope="parent"/>
+      <xacro:property name="lift_top_link_ixz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_top_link_iyy" value="0.01664141" scope="parent"/>
+      <xacro:property name="lift_top_link_iyz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_top_link_izz" value="0.03661307" scope="parent"/>
     </xacro:if>
    
 
      
     <xacro:if value="${is_500}">
-    <xacro:property name="height_limit" value="0.5"/>
+      <xacro:property name="height_limit" value="0.5"/>
 
-    <xacro:property name="base_mass_value" value="1.7383784"/>
-    <xacro:property name="base_box_size" value="0.220 0.200 0.015"/>
-    <xacro:property name="lift_base_link_ixx" value="5.7788740E-03" scope="parent"/>
-    <xacro:property name="lift_base_link_ixy" value="0.0" scope="parent"/>
-    <xacro:property name="lift_base_link_ixz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_base_link_iyy" value="1.2717010E-02" scope="parent"/>
-    <xacro:property name="lift_base_link_iyz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_base_link_izz" value="7.0031710E-03" scope="parent"/>
+      <xacro:property name="base_mass_value" value="1.7383784"/>
+      <xacro:property name="base_box_size" value="0.220 0.200 0.015"/>
+      <xacro:property name="lift_base_link_ixx" value="5.7788740E-03" scope="parent"/>
+      <xacro:property name="lift_base_link_ixy" value="0.0" scope="parent"/>
+      <xacro:property name="lift_base_link_ixz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_base_link_iyy" value="1.2717010E-02" scope="parent"/>
+      <xacro:property name="lift_base_link_iyz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_base_link_izz" value="7.0031710E-03" scope="parent"/>
 
-    <xacro:property name="base_to_lower_origin_z" value="0.2382"/>
+      <xacro:property name="base_to_lower_origin_z" value="0.2382"/>
 
-    <xacro:property name="lower_mass_value" value="6.746306"/>
-    <xacro:property name="lower_box_size" value="0.163 0.163 0.4764"/>
-    <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low_500mm.stl"/>
-    <xacro:property name="lift_lower_link_ixx" value="1.577769E-07" scope="parent"/>
-    <xacro:property name="lift_lower_link_ixy" value="0.0" scope="parent"/>
-    <xacro:property name="lift_lower_link_ixz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_lower_link_iyy" value="5.379943E-08" scope="parent"/>
-    <xacro:property name="lift_lower_link_iyz" value="1.521466E-10" scope="parent"/>
-    <xacro:property name="lift_lower_link_izz" value="1.577222E-07" scope="parent"/>
+      <xacro:property name="lower_mass_value" value="6.746306"/>
+      <xacro:property name="lower_box_size" value="0.163 0.163 0.4764"/>
+      <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low_500mm.stl"/>
+      <xacro:property name="lift_lower_link_ixx" value="1.577769E-07" scope="parent"/>
+      <xacro:property name="lift_lower_link_ixy" value="0.0" scope="parent"/>
+      <xacro:property name="lift_lower_link_ixz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_lower_link_iyy" value="5.379943E-08" scope="parent"/>
+      <xacro:property name="lift_lower_link_iyz" value="1.521466E-10" scope="parent"/>
+      <xacro:property name="lift_lower_link_izz" value="1.577222E-07" scope="parent"/>
 
-    <xacro:property name="middle_mass_value" value="5.411604"/>
-    <xacro:property name="middle_box_size" value="0.146 0.146 0.4794"/>
-    <xacro:property name="middle_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_mid_500mm.stl"/>
-    <xacro:property name="lift_middle_link_ixx" value="1.196271E-01" scope="parent"/>
-    <xacro:property name="lift_middle_link_ixy" value="0.0" scope="parent"/>
-    <xacro:property name="lift_middle_link_ixz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_middle_link_iyy" value="3.309969E-02" scope="parent"/>
-    <xacro:property name="lift_middle_link_iyz" value="0.0" scope="parent"/>
-    <xacro:property name="lift_middle_link_izz" value="1.196271E-01" scope="parent"/>
+      <xacro:property name="middle_mass_value" value="5.411604"/>
+      <xacro:property name="middle_box_size" value="0.146 0.146 0.4794"/>
+      <xacro:property name="middle_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_mid_500mm.stl"/>
+      <xacro:property name="lift_middle_link_ixx" value="1.196271E-01" scope="parent"/>
+      <xacro:property name="lift_middle_link_ixy" value="0.0" scope="parent"/>
+      <xacro:property name="lift_middle_link_ixz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_middle_link_iyy" value="3.309969E-02" scope="parent"/>
+      <xacro:property name="lift_middle_link_iyz" value="0.0" scope="parent"/>
+      <xacro:property name="lift_middle_link_izz" value="1.196271E-01" scope="parent"/>
 
-    <xacro:property name="higher_mass_value" value="5.324879"/>
-    <xacro:property name="higher_box_size" value="0.129 0.129 0.490"/>
-    <xacro:property name="higher_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_high_500mm.stl"/>
-    <xacro:property name="lift_higher_link_ixx" value="1.253755E-01" scope="parent"/>
-    <xacro:property name="lift_higher_link_ixy" value="-1.864377E-05" scope="parent"/>
-    <xacro:property name="lift_higher_link_ixz" value="3.368651E-06" scope="parent"/>
-    <xacro:property name="lift_higher_link_iyy" value="2.455221E-02" scope="parent"/>
-    <xacro:property name="lift_higher_link_iyz" value="-7.757573E-06" scope="parent"/>
-    <xacro:property name="lift_higher_link_izz" value="1.253728E-01" scope="parent"/>
+      <xacro:property name="higher_mass_value" value="5.324879"/>
+      <xacro:property name="higher_box_size" value="0.129 0.129 0.490"/>
+      <xacro:property name="higher_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_high_500mm.stl"/>
+      <xacro:property name="lift_higher_link_ixx" value="1.253755E-01" scope="parent"/>
+      <xacro:property name="lift_higher_link_ixy" value="-1.864377E-05" scope="parent"/>
+      <xacro:property name="lift_higher_link_ixz" value="3.368651E-06" scope="parent"/>
+      <xacro:property name="lift_higher_link_iyy" value="2.455221E-02" scope="parent"/>
+      <xacro:property name="lift_higher_link_iyz" value="-7.757573E-06" scope="parent"/>
+      <xacro:property name="lift_higher_link_izz" value="1.253728E-01" scope="parent"/>
 
-    <xacro:property name="top_mass_value" value="1.718423"/>
-    <xacro:property name="top_box_size" value="0.200 0.220 0.015"/>
-    <xacro:property name="lift_top_link_ixx" value="5.819538E-03" scope="parent"/>
-    <xacro:property name="lift_top_link_ixy" value="4.555714E-09" scope="parent"/>
-    <xacro:property name="lift_top_link_ixz" value="8.002694E-06" scope="parent"/>
-    <xacro:property name="lift_top_link_iyy" value="1.280362E-02" scope="parent"/>
-    <xacro:property name="lift_top_link_iyz" value="1.967468E-09" scope="parent"/>
-    <xacro:property name="lift_top_link_izz" value="7.048366E-03" scope="parent"/>
+      <xacro:property name="top_mass_value" value="1.718423"/>
+      <xacro:property name="top_box_size" value="0.200 0.220 0.015"/>
+      <xacro:property name="lift_top_link_ixx" value="5.819538E-03" scope="parent"/>
+      <xacro:property name="lift_top_link_ixy" value="4.555714E-09" scope="parent"/>
+      <xacro:property name="lift_top_link_ixz" value="8.002694E-06" scope="parent"/>
+      <xacro:property name="lift_top_link_iyy" value="1.280362E-02" scope="parent"/>
+      <xacro:property name="lift_top_link_iyz" value="1.967468E-09" scope="parent"/>
+      <xacro:property name="lift_top_link_izz" value="7.048366E-03" scope="parent"/>
     </xacro:if>
 
   <xacro:unless value="${not omit_plates}">
