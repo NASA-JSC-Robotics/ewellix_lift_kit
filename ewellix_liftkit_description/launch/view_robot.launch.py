@@ -32,14 +32,14 @@ def generate_launch_description():
             description="Start robot with fake hardware mirroring command to its states.",
         )
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "max_height",
-            default_value="500",
-            description="Maximum height of the ewellix lifting column \
-                         at full extension. Please enter value in mm.",
-        )
-    )
+    # declared_arguments.append(
+    #     DeclareLaunchArgument(
+    #         "max_height",
+    #         default_value="500",
+    #         description="Maximum height of the ewellix lifting column \
+    #                      at full extension. Please enter value in mm.",
+    #     )
+    # )
     declared_arguments.append(
         DeclareLaunchArgument(
             "com_port",
@@ -74,7 +74,7 @@ def generate_launch_description():
     robot_name = LaunchConfiguration("robot_name")
     tf_prefix = LaunchConfiguration("tf_prefix")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    max_height = LaunchConfiguration("max_height")
+    # max_height = LaunchConfiguration("max_height")
     com_port = LaunchConfiguration("com_port")
     rviz = LaunchConfiguration("rviz")
     height_limit = LaunchConfiguration("height_limit")
@@ -97,9 +97,9 @@ def generate_launch_description():
             "use_fake_hardware:=",
             use_fake_hardware,
             " ",
-            "max_height:=",
-            max_height,
-            " ",
+            # "max_height:=",
+            # max_height,
+            # " ",
             "com_port:=",
             com_port,
             " ",
