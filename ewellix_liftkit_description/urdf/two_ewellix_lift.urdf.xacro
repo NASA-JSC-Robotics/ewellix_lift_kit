@@ -9,6 +9,8 @@
   <xacro:arg name="use_fake_hardware" default="false" />
   <xacro:arg name="com_port" default="/dev/ttyUSB0" />
   <xacro:arg name="x_offset" default="0.5" />
+  <xacro:arg name="is_700" default="false" />
+  <xacro:arg name="is_500" default="true" />
 
   <link name="world"/>
 
@@ -17,6 +19,8 @@
   
   <xacro:ewellix_lift
     name="$(arg name)"
+    is_700="$(arg is_700)"
+    is_500="$(arg is_500)"
     tf_prefix="$(arg tf_prefix)"
     parent="world"
     height_limit="$(arg height_limit)"
@@ -29,6 +33,8 @@
 
   <xacro:ewellix_lift
     name="$(arg name)_2"
+    is_700="$(arg is_700)"
+    is_500="$(arg is_500)"
     tf_prefix="2_"
     parent="world"
     height_limit="$(arg height_limit)"
