@@ -9,7 +9,7 @@
   <xacro:arg name="use_fake_hardware" default="false" />
   <xacro:arg name="com_port" default="/dev/ttyUSB0" />
   <xacro:arg name="x_offset" default="0.5" />
-  <xacro:arg name="is_700" default="false" />
+  <xacro:arg name="is_700" default="true" />
   <xacro:arg name="is_500" default="false" />
 
   <link name="world"/>
