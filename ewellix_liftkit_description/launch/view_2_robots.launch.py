@@ -54,7 +54,20 @@ def generate_launch_description():
             description="Maximum height in meters for the lift",
         )
     )
-
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "is_700",
+            default_value="false",
+            description="Set to true to use the 700mm stroke liftkit configuration.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "is_500",
+            default_value="true",
+            description="Set to true to use the 500mm stroke liftkit configuration.",
+        )
+    )
     # other args
     declared_arguments.append(
         DeclareLaunchArgument(
@@ -78,6 +91,8 @@ def generate_launch_description():
     com_port = LaunchConfiguration("com_port")
     rviz = LaunchConfiguration("rviz")
     height_limit = LaunchConfiguration("height_limit")
+    is_700 = LaunchConfiguration("is_700")
+    is_500 = LaunchConfiguration("is_500")
     x_offset = LaunchConfiguration("x_offset")
 
     robot_description_content = Command(
@@ -102,6 +117,12 @@ def generate_launch_description():
             # " ",
             "com_port:=",
             com_port,
+            " ",
+            "is_700:=",
+            is_700,
+            " ",
+            "is_500:=",
+            is_500,
             " ",
             "x_offset:=",
             x_offset,
