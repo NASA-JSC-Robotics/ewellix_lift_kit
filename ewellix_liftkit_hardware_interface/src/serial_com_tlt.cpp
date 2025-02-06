@@ -2,45 +2,64 @@
 #include "rclcpp/macros.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-const double LIFTKIT_SETPOINT_THRESHOLD = 0.011;
-const double METERS_TO_TICKS = 1611.320754717;
-const double TICKS_TO_METERS = 0.000310304;
-const int TICKS_OFFSET = 10;
-const int MOT1 = 0x00;
-const int MOT2 = 0x01;
-const int MOT1_ADDR = 0x11;
-const int MOT2_ADDR = 0x12;
-const int MOT_ALL = 0x07;
-const int UP = 0x02;
-const int DOWN = 0x01;
-const int UNUSED = 0Xff;
-const int SPEED_CMD = 0x04;
-const int SPEED_UNUSED = 0x00;
-const int REMOTE_DATA_ITEM = 0x30;
-const int OPEN_COMM = 0x01;
-const int SPEED_HIGH_LIMIT = 100; // As percentage of 100
-const int SPEED_LOW_LIMIT = 32;   // As percentage of 100
-const int Kp = 1000;
+// conversion values
+constexpr double METERS_TO_TICKS = 1611.320754717;
+constexpr double TICKS_TO_METERS = 0.000310304;
 
-SerialComTlt::SerialComTlt() {
-  run_ = true;
-  debug_ = false;
-  stop_loop_ = false;
-  com_started_ = false;
-  already_has_goal_ = false;
-  mot1_pose_ = 0;
-  mot2_pose_ = 0;
-  mot_ticks_ = 0;
+// intercept for y = mx + b when calculating the position of the lift
+constexpr int TICKS_OFFSET = 10;
 
-  last_target_ = 0.0;
-  previous_pose_ = 0.0;
-  current_pose_ = 0.0;
-  current_target_ = 0.0;
-  height_limit_ = 0.7;
+// hex values for ewellix specific params
+constexpr int MOT1 = 0x00;
+constexpr int MOT2 = 0x01;
+constexpr unsigned char MOT1_ADDR = 0x11;
+constexpr int MOT_ALL = 0x07;
+constexpr unsigned char MOT2_ADDR = 0x12;
+constexpr int UP = 0x02;
+constexpr int DOWN = 0x01;
+constexpr int UNUSED = 0Xff;
+constexpr int SPEED_CMD = 0x04;
+constexpr int SPEED_UNUSED = 0x00;
+constexpr int REMOTE_DATA_ITEM = 0x30;
+constexpr int OPEN_COMM = 0x01;
 
-  curr_dir = MOVING_STOPPED;
-  last_dir = MOVING_STOPPED;
-}
+// If you command 0 for move speed, the lift will not treat it as a 0 speed,
+// instead, we send a value of 2 which it will ifnore because it is below
+// the threshold
+constexpr int LIFT_CMD_NO_MOVE = 2;
+// found that when moving up at 100 speed, we move at about 0.035 m/s
+// which corresponds to a speed_cmd = desired_Speed * 3222
+constexpr double FF_SCALE = 3222;
+// Moving down needs a lot less effort for similar tracking because
+// it has gravity working with it
+constexpr double UP_TO_DOWN_SPEED_FACTOR = 0.45;
+// controller gains
+constexpr double Kp = 4000;
+constexpr double Kd = 200.0;
+constexpr double Ki = 4000.0;
+constexpr double Ki_max = 10.0;
+constexpr double Ki_min = -1.0 * Ki_max / UP_TO_DOWN_SPEED_FACTOR;
+constexpr bool antiwindup = true;
+
+// max value to command for either of the motors
+constexpr int SPEED_HIGH_LIMIT = 100; // As percentage of 100
+// lower limit to command for the motors. If you command under this, the
+// liftkit will not move, and it will end up in an error state until you
+// force it to change directions, which can be a hassle.
+std::vector<int> SPEED_LOW_LIMIT_UP = {32, 32};   // As percentage of 100
+std::vector<int> SPEED_LOW_LIMIT_DOWN = {29, 29}; // As percentage of 100
+
+SerialComTlt::SerialComTlt()
+    : run_(true), debug_(false), stop_loop_(false), com_started_(false),
+      first_time_(true), height_limit_(0.7),
+      desired_pose_(std::numeric_limits<double>::quiet_NaN()),
+      desired_velocity_(0.0), current_pose_(0.0), previous_pose_(0.0),
+      current_velocity_(0.0), commanded_velocity_(0.0), mot1_pose_(0),
+      mot2_pose_(0), mot1_pose_m_(0), mot2_pose_m_(0), mot_ticks_(0), lock_(),
+      serial_tlt_(), pid_(), speed_commands_(2, LIFT_CMD_NO_MOVE),
+      curr_dirs_(2, DIR::MOVING_STOPPED), last_dirs_(2, DIR::MOVING_STOPPED),
+      should_moves_(2, 0), stoppeds_(2, false), num_cycles_waiteds_(2, 0),
+      curr_dir(MOVING_STOPPED), last_dir(MOVING_STOPPED), cycles_to_wait(2) {}
 
 SerialComTlt::~SerialComTlt() {
   stop();
@@ -75,9 +94,7 @@ bool SerialComTlt::startSerialCom(string port, int baud_rate) {
   }
 }
 
-/*
- * Activate the remote function
- */
+/// Activate the remote function
 bool SerialComTlt::startRs232Com() {
 
   vector<unsigned char> params = {OPEN_COMM};
@@ -93,16 +110,17 @@ bool SerialComTlt::startRs232Com() {
                                     0xff}; // Start cyclic communications
     sendCmd("RC", &params);
     getColumnSize();
-    setColumnSize(0.0);
+    // send the lift to the home position
+    // setColumnSize(0.0);
+    pid_ = control_toolbox::Pid(Kp, Ki, Kd, Ki_max, Ki_min, antiwindup);
+    pid_.reset();
     return true;
   } else {
     return false;
   }
 }
 
-/*
- * Deactivate the remote function
- */
+/// Deactivate the remote function
 bool SerialComTlt::stopRs232Com() {
   com_started_ = false;
   usleep(100);
@@ -118,9 +136,7 @@ bool SerialComTlt::stopRs232Com() {
   }
 }
 
-/*
- * Move Mot1 with input pose (ntick)
- */
+/// Move Mot1 with input pose (ntick)
 void SerialComTlt::moveMot1Pose(int pose) {
   vector<unsigned char> pose_hex = intToBytes(pose);
   unsigned char a = *(pose_hex.end() - 4);
@@ -137,9 +153,7 @@ void SerialComTlt::moveMot1Pose(int pose) {
   sendCmd("RE", &params); // move
 }
 
-/*
- * Move Mot2 with input pose (ntick)
- */
+/// Move Mot2 with input pose (ntick)
 void SerialComTlt::moveMot2Pose(int pose) {
   vector<unsigned char> pose_hex = intToBytes(pose);
   unsigned char a = *(pose_hex.end() - 4);
@@ -157,9 +171,7 @@ void SerialComTlt::moveMot2Pose(int pose) {
   sendCmd("RE", &params); // move
 }
 
-/*
- * Control the column size
- */
+/// Control the column size
 void SerialComTlt::setColumnSize(double height) {
   if (height > height_limit_) {
     height = height_limit_;
@@ -176,202 +188,140 @@ void SerialComTlt::setColumnSize(double height) {
   moveMot2Pose(mot_ticks_);
 }
 
-/*
- *  Move up both motors
- */
+///  Move up both motors
 void SerialComTlt::moveUp() {
   moveMot1Up();
   moveMot2Up();
 }
 
-/*
- *  Move down both motors
- */
+///  Move down both motors
 void SerialComTlt::moveDown() {
   moveMot1Down();
   moveMot2Down();
 }
 
-/*
- *  Move up Mot1
- */
+///  Move up Mot1
 void SerialComTlt::moveMot1Up() {
   vector<unsigned char> params = {MOT1, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Move up Mot2
- */
+///  Move up Mot2
 void SerialComTlt::moveMot2Up() {
   vector<unsigned char> params = {MOT2, UP, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Move down Mot1
- */
+///  Move down Mot1
 void SerialComTlt::moveMot1Down() {
   vector<unsigned char> params = {MOT1, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Move down Mot2
- */
+//  Move down Mot2
 void SerialComTlt::moveMot2Down() {
-
   vector<unsigned char> params = {MOT2, DOWN, UNUSED};
   sendCmd("RE", &params);
 }
 
-/*
- *  Set the speed of both Mot1 and Mot2
- */
+// Set the speed of both Mot1 and Mot2
 void SerialComTlt::setLiftSpeed(int speed) {
+
+  speed = speed / 2;
+  setLiftSpeedForMotor(speed, MOTOR_NUM::MOTOR_ONE);
+  setLiftSpeedForMotor(speed, MOTOR_NUM::MOTOR_TWO);
+}
+
+// Set the speed of both Mot1 and Mot2
+void SerialComTlt::setLiftSpeedForMotor(int speed, MOTOR_NUM motor_num) {
 
   // Clamp max speed command
   if (abs(speed) > SPEED_HIGH_LIMIT)
     speed = SPEED_HIGH_LIMIT;
-  // Clamp min speed command
-  if (abs(speed) < SPEED_LOW_LIMIT)
-    speed = SPEED_LOW_LIMIT;
 
   // Explicitly convert speed for the command interface
   auto speed_param = static_cast<unsigned char>(abs(speed));
 
-  // Set MOT1 speed
-  vector<unsigned char> params = {SPEED_CMD,        SPEED_UNUSED, MOT1_ADDR,
-                                  REMOTE_DATA_ITEM, speed_param,  SPEED_UNUSED};
-  sendCmd("RT", &params);
+  auto mot_addr = (motor_num == MOTOR_NUM::MOTOR_ONE) ? MOT1_ADDR : MOT2_ADDR;
 
-  // Set MOT2 speed
-  params = {SPEED_CMD,        SPEED_UNUSED, MOT2_ADDR,
-            REMOTE_DATA_ITEM, speed_param,  SPEED_UNUSED};
+  // Set speed for desired motor
+  vector<unsigned char> params = {SPEED_CMD,        SPEED_UNUSED, mot_addr,
+                                  REMOTE_DATA_ITEM, speed_param,  SPEED_UNUSED};
   sendCmd("RT", &params);
 }
 
-/*
- * Stop both motors
- */
+/// Stop both motors
 void SerialComTlt::stop() {
   stopMot1();
   stopMot2();
 }
 
-/*
- * Stop Mot1
- */
+/// Stop Mot1
 void SerialComTlt::stopMot1() {
+  num_cycles_waiteds_[0] = 0;
+  stoppeds_[0] = true;
   vector<unsigned char> params = {MOT1, 0x00}; // 0 fast stop   1 smooth stop
   sendCmd("RS", &params);                      // stop moving
 }
 
-/*
- * Stop Mot2
- */
+/// Stop Mot2
 void SerialComTlt::stopMot2() {
+  num_cycles_waiteds_[1] = 0;
+  stoppeds_[1] = true;
   vector<unsigned char> params = {MOT2, 0x00};
   sendCmd("RS", &params); // stop moving
 }
 
-/*
- * Stop all motors
- */
+/// Stop all motors
 void SerialComTlt::stopMotAll() {
   vector<unsigned char> params = {MOT_ALL, 0x00}; // 0 fast stop   1 smooth stop
   sendCmd("RS", &params);                         // stop moving
 }
 
-/*
- * Get position
- */
+/// Get position
 double SerialComTlt::getColumnSize() {
   getPoseM1();
   getPoseM2();
   previous_pose_ = current_pose_;
   current_pose_ =
       double(mot1_pose_ + mot2_pose_ - 2 * TICKS_OFFSET) * TICKS_TO_METERS;
+
+  // get individual values in meters to use for logic to choose which stack
+  // to command
+  mot1_pose_m_ = double(mot1_pose_ - TICKS_OFFSET) * TICKS_TO_METERS;
+  mot2_pose_m_ = double(mot2_pose_ - TICKS_OFFSET) * TICKS_TO_METERS;
+
   return current_pose_;
 }
 
-/*
- * Stop velocity
- */
+/// Stop velocity
 double SerialComTlt::getColumnVelocity() { return current_velocity_; }
 
-/*
- * Get raw position of Mot1
- */
+/// Get raw position of Mot1
 void SerialComTlt::getPoseM1() {
   vector<unsigned char> params = {MOT1_ADDR, 0x00};
   sendCmd("RG", &params);
 }
 
-/*
- * Get raw position of Mot2
- */
+/// Get raw position of Mot2
 void SerialComTlt::getPoseM2() {
   vector<unsigned char> params = {MOT2_ADDR, 0x00};
   sendCmd("RG", &params);
 }
 
-/*
- * Loop to maintain the remote function with RC command
- */
+/// Loop to maintain the remote function with RC command
 void SerialComTlt::comLoop() {
   vector<unsigned char> params = {0x01, 0x00, 0xff};
   int speed_command;
   auto last_time = std::chrono::steady_clock::now();
   auto curr_time = std::chrono::steady_clock::now();
 
-  // if we change directions too fast, the liftkit may not respond. So we have
-  // to wait for cycles_to_wait before sending a new command
-  static int num_cycles_waited = 0;
+  // run this while ROS has told us we are good to go
   while (run_) {
     while (com_started_) {
-
       sendCmd("RC", &params);
-      getColumnSize();
-      speed_command = abs(Kp * (current_target_ - current_pose_));
-      setLiftSpeed(speed_command);
-      // if we detect a change in target and we are currently looking for a
-      // target, set to move either up or down
-      if (current_target_ != last_target_ && !already_has_goal_ &&
-          (num_cycles_waited++ == cycles_to_wait)) {
-        already_has_goal_ = true;
-        if (current_target_ - current_pose_ >= LIFTKIT_SETPOINT_THRESHOLD) {
-          moveUp();
-        } else if (current_target_ - current_pose_ <=
-                   -LIFTKIT_SETPOINT_THRESHOLD) {
-          moveDown();
-        } else {
-          already_has_goal_ = false;
-          stop();
-        }
-        num_cycles_waited = 0;
-      }
 
-      // get the current direction we are moving. Ignore stop because we just
-      // care about change in up->down
-      if (last_target_ > current_target_)
-        curr_dir = MOVING_DOWN;
-      else if (last_target_ < current_target_)
-        curr_dir = MOVING_UP;
-
-      // if we detected a change in goal direction, or we have reached our goal,
-      // we need to stop, and start looking for our new goal
-      if ((abs(current_pose_ - current_target_) <=
-           LIFTKIT_SETPOINT_THRESHOLD) ||
-          ((curr_dir != last_dir))) {
-        already_has_goal_ = false;
-        stop();
-      }
-
-      last_dir = curr_dir;
-      // if (curr_dir != MOVING_STOPPED) last_moving_dir=curr_moving_dir;
-      last_target_ = current_target_;
-      last_time = curr_time;
+      // read portion
 
       // get period of cycle for velocity calculation
       curr_time = std::chrono::steady_clock::now();
@@ -379,18 +329,138 @@ void SerialComTlt::comLoop() {
                              curr_time - last_time)
                              .count();
 
+      // get the position data from the liftkit for ROS
+      getColumnSize();
+
+      if (first_time_) {
+        desired_pose_ = current_pose_;
+      }
+
+      // get error and threshold state
+      double error = desired_pose_ - current_pose_;
+
+      // calculate actual and desired velocity to pass back to ROS
       current_velocity_ = (current_pose_ - previous_pose_) /
                           (static_cast<double>(dt_read_) / 1.0e9);
+
+      // write portion
+
+      // command speed based on a PID controller as well as FF value
+      double ff_speed = desired_velocity_ * FF_SCALE;
+      double fb_command = pid_.computeCommand(error, dt_read_);
+      speed_command = static_cast<int>(fb_command + ff_speed);
+
+      // The robot actually moves a lot faster going down for the same
+      // speed - I estimated it needs about 70% of the command to move
+      // at the same speed.
+      if (speed_command < 0)
+        speed_command = static_cast<int>(static_cast<double>(speed_command) *
+                                         UP_TO_DOWN_SPEED_FACTOR);
+      commanded_velocity_ = speed_command;
+
+      // set the current moving direction based on
+      if (speed_command > 0)
+        curr_dirs_ = {MOVING_UP, MOVING_UP};
+      else if (speed_command < 0)
+        curr_dirs_ = {MOVING_DOWN, MOVING_DOWN};
+      else
+        curr_dirs_ = {MOVING_STOPPED, MOVING_STOPPED};
+
+      // default initialize speed commands to 0s
+      speed_commands_ = {0, 0};
+      constexpr double max_height_epsilon = 0.001;
+      // if we are moving up, and mot1 is < (0.35 - epsilon), use mot1
+      // otherwise use mot2
+      if (curr_dirs_[0] == MOVING_UP) {
+        if (mot1_pose_m_ < (height_limit_ / 2 - max_height_epsilon))
+          speed_commands_[0] = speed_command;
+        else
+          speed_commands_[1] = speed_command;
+      }
+      // if we are moving down, and mot2 is < (0 + epsilon), use mot1
+      // otherwise use mot2
+      else if (curr_dirs_[0] == MOVING_DOWN) {
+        if (mot2_pose_m_ < (0 + max_height_epsilon))
+          speed_commands_[0] = speed_command;
+        else
+          speed_commands_[1] = speed_command;
+      }
+
+      // loop over each of the motors to perform the same logic of what state
+      // they should be in
+      std::vector<MOTOR_NUM> motor_nums = {MOTOR_NUM::MOTOR_ONE,
+                                           MOTOR_NUM::MOTOR_TWO};
+      for (const auto &motor : motor_nums) {
+        size_t motor_index = (motor == MOTOR_ONE) ? 0 : 1;
+        auto speed_limit_this_direction = (curr_dirs_[motor_index] == MOVING_UP)
+                                              ? SPEED_LOW_LIMIT_UP
+                                              : SPEED_LOW_LIMIT_DOWN;
+        // if we are consistently moving in the same direction, we should move
+        should_moves_[motor_index] =
+            (curr_dirs_[motor_index] == last_dirs_[motor_index]) &&
+            (abs(speed_commands_[motor_index]) >
+             speed_limit_this_direction[motor_index]);
+
+        // default initialize to no movement on motor i
+        int lift_cmd_speed = LIFT_CMD_NO_MOVE;
+        // if we said we should be moving, reassign to calculated cmd
+        if (should_moves_[motor_index])
+          lift_cmd_speed = speed_commands_[motor_index];
+
+        // send command for whatever motor we are using.
+        setLiftSpeedForMotor(lift_cmd_speed, motor);
+
+        // we need to stop if we (1) have a should be stopped flag and we are
+        // not currently stopped or (2) it is the first time through
+        if ((!should_moves_[motor_index] && !stoppeds_[motor_index]) ||
+            first_time_) {
+          if (motor == MOTOR_NUM::MOTOR_ONE)
+            stopMot1();
+          else
+            stopMot2();
+        }
+        // if we are in a state where we should be moving (velocity cmd above
+        // min threshold) and we are stopped, and we have waited the appropriate
+        // number of cycles, tell the correct motor to move
+        else if (should_moves_[motor_index] && stoppeds_[motor_index] &&
+                 num_cycles_waiteds_[motor_index] >= cycles_to_wait) {
+          // if speed is greater than 0, we need to be commanding a move up
+          if (speed_commands_[motor_index] > 0) {
+            if (motor == MOTOR_NUM::MOTOR_ONE)
+              moveMot1Up();
+            else
+              moveMot2Up();
+          }
+          // if speed is less than 0, we need to be commanding a move down
+          else {
+            if (motor == MOTOR_NUM::MOTOR_ONE)
+              moveMot1Down();
+            else
+              moveMot2Down();
+          }
+          stoppeds_[motor_index] = false;
+        }
+
+        // we always increment number of cycles waited. Stopping
+        // resets this counter, so
+        num_cycles_waiteds_[motor_index]++;
+      }
+
+      // no longer the first loop
+      first_time_ = false;
+
+      // update persistent values for next iteration
+      last_dirs_ = curr_dirs_;
+      last_time = curr_time;
+
       usleep(100);
     }
     usleep(1);
   }
 }
 
-/*
- * Convert the command in bytes and compute the checksum before writing to
- * serial com
- */
+/// Convert the command in bytes and compute the checksum before writing to
+/// serial com
 bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param) {
   lock_.lock();
   vector<unsigned char> final_cmd;
@@ -404,7 +474,6 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char> *param) {
       final_cmd.push_back(*it); // add params to the cmd
     }
   }
-
   // Compute checksum
   unsigned short checksum = calculateChecksum(&final_cmd);
   unsigned short lsb = checksum & 0x00FF;
@@ -567,9 +636,7 @@ vector<unsigned char> SerialComTlt::feedback() {
   return received_data;
 }
 
-/*
- * Compute the checksum
- */
+/// Compute the checksum
 unsigned short SerialComTlt::calculateChecksum(vector<unsigned char> *cmd) {
   unsigned short crc = 0;
   for (vector<unsigned char>::iterator it = cmd->begin(); it != cmd->end();
@@ -580,9 +647,7 @@ unsigned short SerialComTlt::calculateChecksum(vector<unsigned char> *cmd) {
   return crc;
 }
 
-/*
- * Compare the response checksum with the calculated
- */
+/// Compare the response checksum with the calculated
 bool SerialComTlt::checkResponseChecksum(vector<unsigned char> *response) {
   unsigned short response_checksum_lsb = *(response->end() - 2);
   unsigned short response_checksum_msb = *(response->end() - 1);
@@ -653,9 +718,7 @@ bool SerialComTlt::checkResponseAck(vector<unsigned char> *response) {
   return false;
 }
 
-/*
- *  Extract motor pose from the response
- */
+///  Extract motor pose from the response
 bool SerialComTlt::extractPose(vector<unsigned char> *response, int motor) {
   int position = (unsigned char)(*(response->end() - 5)) << 8 |
                  (unsigned char)(*(response->end() - 6));
@@ -670,9 +733,7 @@ bool SerialComTlt::extractPose(vector<unsigned char> *response, int motor) {
   return true;
 }
 
-/*
- * Converter
- */
+/// Converter
 vector<unsigned char> SerialComTlt::intToBytes(int paramInt) {
 
   vector<unsigned char> arrayOfByte(4);
