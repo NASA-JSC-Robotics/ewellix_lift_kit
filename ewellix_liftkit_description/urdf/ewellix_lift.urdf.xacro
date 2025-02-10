@@ -15,7 +15,7 @@
 
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
-  
+
   <xacro:ewellix_lift
     name="$(arg name)"
     is_700="$(arg is_700)"

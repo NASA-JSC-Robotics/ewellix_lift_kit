@@ -46,7 +46,7 @@ def generate_launch_description():
             description="Maximum height in meters for the lift",
         )
     )
- 
+
     # other args
     declared_arguments.append(
         DeclareLaunchArgument(

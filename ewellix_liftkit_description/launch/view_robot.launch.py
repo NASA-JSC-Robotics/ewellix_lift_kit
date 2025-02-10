@@ -69,14 +69,11 @@ def generate_launch_description():
     height_limit = LaunchConfiguration("height_limit")
     is_500 = LaunchConfiguration("is_500")
 
-
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution(
-                [FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift.urdf.xacro"]
-            ),
+            PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift.urdf.xacro"]),
             " ",
             "name:=",
             robot_name,

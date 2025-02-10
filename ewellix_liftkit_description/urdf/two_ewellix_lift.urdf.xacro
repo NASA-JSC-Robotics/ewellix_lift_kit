@@ -16,7 +16,7 @@
 
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
-  
+
   <xacro:ewellix_lift
     name="$(arg name)"
     is_700="$(arg is_700)"
@@ -42,7 +42,7 @@
     use_fake_hardware="$(arg use_fake_hardware)"
     com_port="$(arg com_port)"
   >
-    <origin xyz="$(arg x_offset) 0 0" rpy="0 0 0"/> 
-  </xacro:ewellix_lift> 
+    <origin xyz="$(arg x_offset) 0 0" rpy="0 0 0"/>
+  </xacro:ewellix_lift>
 
 </robot>
