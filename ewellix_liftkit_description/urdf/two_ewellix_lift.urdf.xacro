@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
-   <!-- robot name parameter -->
+  <!-- robot name parameter -->
   <xacro:arg name="name" default="ewellix_liftkit"/>
   <xacro:arg name="tf_prefix" default="" />
   <xacro:arg name="parent" default="" />

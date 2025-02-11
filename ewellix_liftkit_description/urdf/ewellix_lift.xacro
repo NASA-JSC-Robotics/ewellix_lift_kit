@@ -15,8 +15,6 @@
     com_port:=/dev/ttyUSB0
     *origin
   ">
-    <!-- TODO work on abstracting this xacro to work for both 500 and 700mm lifts-->
-    <!-- do not put any special characters such as a colon in a comment in xacros-->
 
     <xacro:if value="${not omit_plates}">
       <xacro:property name="lift_base_link_name" value="${tf_prefix}ewellix_lift_base_link"/>
@@ -256,7 +254,7 @@
       </collision>
     </link>
 
-    <!-- TODO Limit Upper Height -Mike -->
+    
     <!--LOWER TO HIGHER (PRISMATIC)-->
     <joint name="${tf_prefix}ewellix_lift_lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
