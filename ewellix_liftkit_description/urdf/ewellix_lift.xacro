@@ -254,7 +254,7 @@
       </collision>
     </link>
 
-    
+
     <!--LOWER TO HIGHER (PRISMATIC)-->
     <joint name="${tf_prefix}ewellix_lift_lower_to_higher" type="prismatic">
       <parent link="${tf_prefix}ewellix_lift_lower_link"/>
