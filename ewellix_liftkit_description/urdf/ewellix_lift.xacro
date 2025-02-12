@@ -61,6 +61,7 @@
       <xacro:property name="lift_middle_link_izz" value="0.095393471" scope="parent"/>
 
       <xacro:property name="middle_to_higher_origin_z" value="-0.03397"/>
+      <xacro:property name="middle_upper_limit" value="0.351"/>
 
       <xacro:property name="higher_mass_value" value="1.5166778e+01"/>
       <xacro:property name="higher_box_size" value="0.129 0.129 0.488"/>
@@ -131,6 +132,7 @@
       <xacro:property name="lift_middle_link_izz" value="1.196271E-01" scope="parent"/>
 
       <xacro:property name="middle_to_higher_origin_z" value="-0.0053"/>
+      <xacro:property name="middle_upper_limit" value="0.25"/>
 
       <xacro:property name="higher_mass_value" value="5.324879"/>
       <xacro:property name="higher_box_size" value="0.129 0.129 0.490"/>
@@ -270,7 +272,7 @@
       <child link="${tf_prefix}ewellix_lift_middle_link"/>
       <origin xyz="0 0 ${middle_to_higher_origin_z}" rpy="0 0 0"/>
       <axis xyz="0 0 -1"/>
-      <limit lower="0" upper="0.351" effort="1000" velocity="1"/>
+      <limit lower="0" upper="${middle_upper_limit}" effort="1000" velocity="1"/>
       <mimic joint="${tf_prefix}ewellix_lift_lower_to_higher" multiplier="0.5" offset="0"/>
     </joint>
 
