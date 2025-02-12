@@ -53,6 +53,13 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            "is_700",
+            default_value="true",
+            description="Set to true to use the 500mm stroke liftkit configuration.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "is_500",
             default_value="false",
             description="Set to true to use the 500mm stroke liftkit configuration.",
