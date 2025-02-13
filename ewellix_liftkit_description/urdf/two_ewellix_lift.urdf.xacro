@@ -7,7 +7,8 @@
   <xacro:arg name="height_limit" default="0.5" />
   <xacro:arg name="omit_plates" default="false" />
   <xacro:arg name="use_fake_hardware" default="false" />
-  <xacro:arg name="com_port" default="/dev/ttyUSB0" />
+  <xacro:arg name="com_port_1" default="/dev/ttyUSB0" />
+  <xacro:arg name="com_port_2" default="/dev/ttyUSB0" />
   <xacro:arg name="x_offset" default="0.5" />
   <xacro:arg name="is_700" default="false" />
   <xacro:arg name="is_500" default="true" />
@@ -26,7 +27,7 @@
     height_limit="$(arg height_limit)"
     omit_plates="false"
     use_fake_hardware="$(arg use_fake_hardware)"
-    com_port="$(arg com_port)"
+    com_port="$(arg com_port_1)"
   >
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </xacro:ewellix_lift>
@@ -40,7 +41,7 @@
     height_limit="$(arg height_limit)"
     omit_plates="false"
     use_fake_hardware="$(arg use_fake_hardware)"
-    com_port="$(arg com_port)"
+    com_port="$(arg com_port_2)"
   >
     <origin xyz="$(arg x_offset) 0 0" rpy="0 0 0"/>
   </xacro:ewellix_lift>
