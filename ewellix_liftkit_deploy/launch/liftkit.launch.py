@@ -80,6 +80,7 @@ def generate_launch_description():
     com_port = LaunchConfiguration("com_port")
     height_limit = LaunchConfiguration("height_limit")
     is_500 = LaunchConfiguration("is_500")
+    is_700 = LaunchConfiguration("is_700")
 
     robot_description_content = Command(
         [
@@ -104,6 +105,9 @@ def generate_launch_description():
             " ",
             "is_500:=",
             is_500,
+            " ",
+            "is_700:=",
+            is_700,
             " ",
         ]
     )
