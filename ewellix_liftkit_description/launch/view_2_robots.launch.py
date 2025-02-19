@@ -42,8 +42,8 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "height_limit",
-            default_value="0.7",
-            description="Maximum height in meters for the lift",
+            default_value="0.5",
+            description="Maximum operational height in meters for the lift. Can be set to a value less than or equal to the maximum stroke height of the liftkit.",
         )
     )
 
