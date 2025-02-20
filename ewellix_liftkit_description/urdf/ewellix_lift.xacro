@@ -23,7 +23,7 @@
     <!--For 700 mm stroke-->
     <xacro:if value="${is_700}">
 
-      <xacro:if value="$(eval height_limit >= 0.7)">
+      <xacro:if value="${height_limit >= 0.7}">
         <xacro:property name="height_limit" value="0.7"/>
       </xacro:if>
 
@@ -92,7 +92,7 @@
     <!--For 500 mm stroke-->
     <xacro:if value="${is_500}">
 
-      <xacro:if value="$(eval height_limit >= 0.5)">
+      <xacro:if value="${height_limit >= 0.5}">
         <xacro:property name="height_limit" value="0.5"/>
       </xacro:if>
 
