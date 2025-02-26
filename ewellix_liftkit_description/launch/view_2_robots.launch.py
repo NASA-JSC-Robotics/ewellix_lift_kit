@@ -1,13 +1,9 @@
-import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -43,29 +39,24 @@ def generate_launch_description():
             description="com port for the ewellix",
         )
     )
-
     declared_arguments.append(
         DeclareLaunchArgument(
             "height_limit",
-            default_value="0.7",
-            description="Maximum height in meters for the lift",
+            default_value="0.5",
+            description="Maximum operational height in meters for the lift. \
+                Can be set to a value less than or equal to the maximum stroke height of the liftkit.",
         )
     )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "is_700",
-            default_value="true",
-            description="Set to true to use the 500mm stroke liftkit configuration.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "is_500",
-            default_value="false",
-            description="Set to true to use the 500mm stroke liftkit configuration.",
-        )
-    )
+
     # other args
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "x_offset",
+            default_value="0.5",
+            description="Distance between two liftkits, if there's two.",
+        )
+    )
+
     declared_arguments.append(
         DeclareLaunchArgument(
             "rviz",
@@ -76,17 +67,18 @@ def generate_launch_description():
     robot_name = LaunchConfiguration("robot_name")
     tf_prefix = LaunchConfiguration("tf_prefix")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    rviz = LaunchConfiguration("rviz")
     com_port = LaunchConfiguration("com_port")
+    rviz = LaunchConfiguration("rviz")
     height_limit = LaunchConfiguration("height_limit")
-    is_500 = LaunchConfiguration("is_500")
-    is_700 = LaunchConfiguration("is_700")
+    x_offset = LaunchConfiguration("x_offset")
 
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift.urdf.xacro"]),
+            PathJoinSubstitution(
+                [FindPackageShare("ewellix_liftkit_description"), "urdf", "two_ewellix_lift.urdf.xacro"]
+            ),
             " ",
             "name:=",
             robot_name,
@@ -100,49 +92,31 @@ def generate_launch_description():
             "com_port:=",
             com_port,
             " ",
+            "x_offset:=",
+            x_offset,
+            " ",
             "height_limit:=",
             height_limit,
-            " ",
-            "is_500:=",
-            is_500,
-            " ",
-            "is_700:=",
-            is_700,
             " ",
         ]
     )
     robot_description = {"robot_description": robot_description_content}
 
-    robot_state_publisher = Node(
+    rviz_config_file = PathJoinSubstitution(
+        [FindPackageShare("ewellix_liftkit_description"), "rviz", "view_robot.rviz"]
+    )
+
+    joint_state_publisher_node = Node(
+        package="joint_state_publisher_gui",
+        executable="joint_state_publisher_gui",
+    )
+
+    robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
-        output="screen",
+        output="both",
         parameters=[robot_description],
     )
-
-    controller_params_file = os.path.join(
-        get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
-    )
-
-    controller_manager = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        parameters=[robot_description, controller_params_file],
-    )
-
-    joint_state_broadcaster_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[
-            "joint_state_broadcaster",
-            "-c",
-            "controller_manager",
-            "--controller-manager-timeout",
-            "100",
-        ],
-    )
-
-    rviz_config_file = PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "rviz", "view_robot.rviz"])
 
     rviz_node = Node(
         package="rviz2",
@@ -153,15 +127,10 @@ def generate_launch_description():
         condition=IfCondition(rviz),
     )
 
-    nodes = [robot_state_publisher, controller_manager, joint_state_broadcaster_spawner, rviz_node]
+    nodes_to_start = [
+        joint_state_publisher_node,
+        robot_state_publisher_node,
+        rviz_node,
+    ]
 
-    spawn_controllers_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory("ewellix_liftkit_deploy"), "launch", "spawn_controllers.launch.py")
-        ),
-        launch_arguments={
-            "use_fake_hardware": use_fake_hardware,
-        }.items(),
-    )
-
-    return LaunchDescription(declared_arguments + nodes + [spawn_controllers_launch])
+    return LaunchDescription(declared_arguments + nodes_to_start)

@@ -34,14 +34,6 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "max_height",
-            default_value="500",
-            description="Maximum height of the ewellix lifting column \
-                         at full extension. Please enter value in mm.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
             "com_port",
             default_value="/dev/ttyUSB0",
             description="com port for the ewellix",
@@ -51,10 +43,17 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "height_limit",
             default_value="0.7",
-            description="Maximum height in meters for the lift",
+            description="Maximum operational height in meters for the lift. \
+                Can be set to a value less than or equal to the maximum stroke height of the liftkit.",
         )
     )
-
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "is_500",
+            default_value="false",
+            description="Set to true to use the 500mm stroke liftkit configuration.",
+        )
+    )
     # other args
     declared_arguments.append(
         DeclareLaunchArgument(
@@ -66,18 +65,16 @@ def generate_launch_description():
     robot_name = LaunchConfiguration("robot_name")
     tf_prefix = LaunchConfiguration("tf_prefix")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    max_height = LaunchConfiguration("max_height")
     com_port = LaunchConfiguration("com_port")
     rviz = LaunchConfiguration("rviz")
     height_limit = LaunchConfiguration("height_limit")
+    is_500 = LaunchConfiguration("is_500")
 
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
             " ",
-            PathJoinSubstitution(
-                [FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift_700mm.urdf.xacro"]
-            ),
+            PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift.urdf.xacro"]),
             " ",
             "name:=",
             robot_name,
@@ -88,11 +85,11 @@ def generate_launch_description():
             "use_fake_hardware:=",
             use_fake_hardware,
             " ",
-            "max_height:=",
-            max_height,
-            " ",
             "com_port:=",
             com_port,
+            " ",
+            "is_500:=",
+            is_500,
             " ",
             "height_limit:=",
             height_limit,

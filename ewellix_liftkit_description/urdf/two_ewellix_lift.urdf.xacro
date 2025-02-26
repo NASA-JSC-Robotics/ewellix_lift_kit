@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
+  <!-- robot name parameter -->
+  <xacro:arg name="name" default="ewellix_liftkit"/>
+  <xacro:arg name="tf_prefix" default="" />
+  <xacro:arg name="parent" default="" />
+  <xacro:arg name="height_limit" default="0.5" />
+  <xacro:arg name="omit_plates" default="false" />
+  <xacro:arg name="use_fake_hardware" default="false" />
+  <xacro:arg name="com_port_1" default="/dev/ttyUSB0" />
+  <xacro:arg name="com_port_2" default="/dev/ttyUSB0" />
+  <xacro:arg name="x_offset" default="0.5" />
+  <xacro:arg name="is_700" default="false" />
+  <xacro:arg name="is_500" default="true" />
+
+  <link name="world"/>
+
+  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
+  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
+
+  <xacro:ewellix_lift
+    name="$(arg name)"
+    is_700="$(arg is_700)"
+    is_500="$(arg is_500)"
+    tf_prefix="$(arg tf_prefix)"
+    parent="world"
+    height_limit="$(arg height_limit)"
+    omit_plates="false"
+    use_fake_hardware="$(arg use_fake_hardware)"
+    com_port="$(arg com_port_1)"
+  >
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:ewellix_lift>
+
+  <xacro:ewellix_lift
+    name="$(arg name)_2"
+    is_700="$(arg is_700)"
+    is_500="$(arg is_500)"
+    tf_prefix="2_"
+    parent="world"
+    height_limit="$(arg height_limit)"
+    omit_plates="false"
+    use_fake_hardware="$(arg use_fake_hardware)"
+    com_port="$(arg com_port_2)"
+  >
+    <origin xyz="$(arg x_offset) 0 0" rpy="0 0 0"/>
+  </xacro:ewellix_lift>
+
+</robot>
