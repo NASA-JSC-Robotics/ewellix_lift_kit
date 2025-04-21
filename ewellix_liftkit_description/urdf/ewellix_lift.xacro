@@ -110,7 +110,7 @@
 
       <xacro:property name="base_to_lower_origin_z" value="0.2457"/>
 
-      
+
       <xacro:property name="lower_mass_value" value="6.746306"/>
       <xacro:property name="lower_box_size" value="0.163 0.163 0.4764"/>
       <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low_500mm.stl"/>
