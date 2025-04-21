@@ -50,11 +50,10 @@ def generate_launch_description():
             default_value="false",
             description="Make MoveIt to use simulation time. This is needed for the trajectory planing in simulation.",
         )
-    )    
+    )
     launch_moveit = LaunchConfiguration("launch_moveit")
     launch_rviz = LaunchConfiguration("launch_rviz")
     use_sim_time = LaunchConfiguration("use_sim_time")
-
 
     description_package = "ewellix_liftkit_description"
     description_file = "ewellix_lift.urdf.xacro"
@@ -64,7 +63,7 @@ def generate_launch_description():
     # TODO: look into opaque function to pass in args to the robot description
     moveit_config = (
         MoveItConfigsBuilder("ewellix_liftkit", package_name="ewellix_liftkit_moveit_config")
-        .robot_description(file_path=description_full_path, mappings={'name': 'ewellix_liftkit'})
+        .robot_description(file_path=description_full_path, mappings={"name": "ewellix_liftkit"})
         .robot_description_semantic(file_path="srdf/ewellix_liftkit.srdf")
         .robot_description_kinematics(file_path="config/kinematics.yaml")
         .joint_limits(file_path="config/joint_limits.yaml")
@@ -79,7 +78,6 @@ def generate_launch_description():
         parameters=[
             moveit_config.to_dict(),
             {"use_sim_time": use_sim_time},
-
         ],
     )
 
@@ -99,7 +97,7 @@ def generate_launch_description():
             moveit_config.planning_pipelines,
             moveit_config.joint_limits,
             moveit_config.planning_scene_monitor,
-            {"use_sim_time": use_sim_time}
+            {"use_sim_time": use_sim_time},
         ],
     )
 

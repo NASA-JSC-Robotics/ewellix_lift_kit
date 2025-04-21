@@ -19,7 +19,7 @@
     <joint name="lower_to_middle" value="0.5"/>
     <joint name="middle_to_higher" value="0.25"/>
   </group_state>
-  
+
   <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
   <!-- <disable_collisions link1="ewellix_lift_higher_link" link2="ewellix_lift_lower_link" reason="Adjacent"/> -->
   <!-- <disable_collisions link1="ewellix_lift_higher_link" link2="ewellix_lift_middle_link" reason="Adjacent"/> -->
