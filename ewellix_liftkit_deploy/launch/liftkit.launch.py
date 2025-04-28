@@ -120,14 +120,22 @@ def generate_launch_description():
         parameters=[robot_description],
     )
 
-    controller_params_file = os.path.join(
+    controller_common_params = os.path.join(
+        get_package_share_directory("ewellix_liftkit_deploy"), "config", "controllers_common.yaml"
+    )
+
+    controller_liftkit_params = os.path.join(
         get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
     )
 
     controller_manager = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[robot_description, controller_params_file],
+        parameters=[
+            robot_description,
+            controller_common_params,
+            controller_liftkit_params,
+        ],
     )
 
     joint_state_broadcaster_spawner = Node(
