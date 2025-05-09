@@ -2,8 +2,6 @@
 
 <robot name="ewellix_liftkit">
   <group name="lift">
-    <!-- <chain base_link="ewellix_lift_lower_link" tip_link="ewellix_lift_higher_link" /> -->
-    <!-- <chain base_link="ewellix_lift_lower_link" tip_link="ewellix_lift_middle_link" /> -->
     <joint name="ewellix_lift_lower_to_higher"/>
     <joint name="middle_mimic_higher"/>
   </group>
@@ -21,11 +19,8 @@
   </group_state>
 
   <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
-  <!-- <disable_collisions link1="ewellix_lift_higher_link" link2="ewellix_lift_lower_link" reason="Adjacent"/> -->
-  <!-- <disable_collisions link1="ewellix_lift_higher_link" link2="ewellix_lift_middle_link" reason="Adjacent"/> -->
-  <!-- <disable_collisions link1="ewellix_lift_lower_link" link2="ewellix_lift_middle_link" reason="Default"/> -->
-  <!-- <disable_collisions link1="ewellix_lift_higher_link" link2="ewellix_lift_top_link" reason="Default"/> -->
-     <disable_collisions link1="ewellix_lift_lower_link" link2="ewellix_lift_middle_link" reason="Default"/>
+    <disable_collisions link1="ewellix_lift_higher_link" link2="ewellix_lift_top_link" reason="Default"/>
+    <disable_collisions link1="ewellix_lift_lower_link" link2="ewellix_lift_middle_link" reason="Default"/>
     <disable_collisions link1="ewellix_lift_lower_link" link2="ewellix_lift_base_link" reason="Adjacent"/>
     <disable_collisions link1="ewellix_lift_lower_link" link2="ewellix_lift_higher_link" reason="Adjacent"/>
     <disable_collisions link1="ewellix_lift_middle_link" link2="ewellix_lift_base_link" reason="Never"/>
