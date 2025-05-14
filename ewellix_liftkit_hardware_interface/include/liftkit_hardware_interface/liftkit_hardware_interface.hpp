@@ -71,6 +71,8 @@ protected:
   hardware_interface::HardwareInfo system_info;
   std::string port;
   double height_limit;
+  int ticks_offset;
+  double meters_to_ticks;
   double previous_position_;
   SerialComTlt srl_;
   thread com_thread_;

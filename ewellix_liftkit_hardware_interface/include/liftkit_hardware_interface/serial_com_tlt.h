@@ -43,7 +43,6 @@ public:
   void moveUp();
   void moveDown();
   void stop();
-  void setColumnSize(double height);
   double getColumnSize();
   double getColumnVelocity();
 
@@ -57,7 +56,10 @@ public:
   bool com_started_; // handles when to exit communication loop
   bool first_time_;  // whether this is the first time through the loop
 
-  double height_limit_; // height limit for stack, set in hwi params
+  double height_limit_;    // height limit for stack, set in hwi params
+  double meters_to_ticks_; // meters to ticks conversion, set in hwi params
+  int ticks_offset_;       // tick count (sum of both motors) when liftkit is at
+                           // nominal down, set in hwi params
 
   double desired_pose_;       // target position from other system
   double desired_velocity_;   // desired velocity from other system

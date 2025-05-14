@@ -10,11 +10,14 @@
   <xacro:arg name="com_port" default="/dev/ttyUSB0" />
   <xacro:arg name="is_700" default="true" />
   <xacro:arg name="is_500" default="false" />
+  <xacro:arg name="hw_calibration_file" default="$(find ewellix_liftkit_description)/config/default_config.yaml"/>
 
   <link name="world"/>
 
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
+
+  <xacro:property name="hw_calibration_file" value="$(arg hw_calibration_file)"/>
 
   <xacro:ewellix_lift
     name="$(arg name)"
@@ -26,6 +29,7 @@
     omit_plates="false"
     use_fake_hardware="$(arg use_fake_hardware)"
     com_port="$(arg com_port)"
+    hw_calibration="${xacro.load_yaml(hw_calibration_file)}"
   >
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </xacro:ewellix_lift>

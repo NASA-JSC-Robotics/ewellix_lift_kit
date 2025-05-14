@@ -43,6 +43,8 @@ CallbackReturn LiftkitHardwareInterface::on_init(
   system_info = info_;
   port = system_info.hardware_parameters["com_port"];
   height_limit = stof(system_info.hardware_parameters["height_limit"]);
+  ticks_offset = stoi(system_info.hardware_parameters["ticks_offset"]);
+  meters_to_ticks = stof(system_info.hardware_parameters["meters_to_ticks"]);
 
   first_loop = true;
   first_non_nan_loop = true;
@@ -54,6 +56,8 @@ CallbackReturn LiftkitHardwareInterface::on_init(
 CallbackReturn LiftkitHardwareInterface::on_configure(
     const rclcpp_lifecycle::State & /*previous_state*/) {
   srl_.height_limit_ = height_limit;
+  srl_.ticks_offset_ = ticks_offset;
+  srl_.meters_to_ticks_ = meters_to_ticks;
   RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
               "Successfully configured!");
   return CallbackReturn::SUCCESS;
@@ -120,6 +124,7 @@ CallbackReturn LiftkitHardwareInterface::on_activate(
     hw_states_extra_[i] = 0;
   }
 
+  RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "here!");
   // // Trying to instantiate the driver
   try {
     if (srl_.startSerialCom(port, 38400)) {
@@ -132,14 +137,27 @@ CallbackReturn LiftkitHardwareInterface::on_activate(
                      "Is the Liftkit USB Connected?");
         return CallbackReturn::ERROR;
       }
+    } else {
+      RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"),
+                   "Failed to start serial connection");
+      return CallbackReturn::ERROR;
     }
   } catch (boost::system::system_error &e) {
     RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"),
                  "TCP error: '%s'", e.what());
     return CallbackReturn::ERROR;
+  } catch (serial::IOException &e) {
+    RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"),
+                 "serial io exception: '%s'", e.what());
+    return CallbackReturn::ERROR;
+  } catch (...) {
+    RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"),
+                 "Unknown Exception caught. Returning failure on activate");
+    return CallbackReturn::ERROR;
   }
   RCLCPP_DEBUG(rclcpp::get_logger("LiftkitHardwareInterface"),
                "Successfully activated!");
+  RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "here");
   return CallbackReturn::SUCCESS;
 }
 

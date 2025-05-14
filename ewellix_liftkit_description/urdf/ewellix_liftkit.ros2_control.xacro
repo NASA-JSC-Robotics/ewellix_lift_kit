@@ -6,7 +6,8 @@
     tf_prefix
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
-    height_limit:=0.7">
+    height_limit:=0.7
+    hw_calibration:=${dict(meters_to_ticks=3222.65,ticks_offset=20)}">
 
     <xacro:unless value="${use_fake_hardware}">
       <ros2_control name="${name}" type="actuator">
@@ -15,6 +16,8 @@
             <param name="lift_name">liftkit</param>
             <param name="com_port">${com_port}</param>
             <param name="height_limit">${height_limit}</param>
+            <param name="meters_to_ticks">${hw_calibration['meters_to_ticks']}</param>
+            <param name="ticks_offset">${hw_calibration['ticks_offset']}</param>
         </hardware>
 
         <joint name="${tf_prefix}ewellix_lift_lower_to_higher">

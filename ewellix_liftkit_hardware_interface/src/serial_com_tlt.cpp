@@ -2,13 +2,6 @@
 #include "rclcpp/macros.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-// conversion values
-constexpr double METERS_TO_TICKS = 1611.320754717;
-constexpr double TICKS_TO_METERS = 0.000310304;
-
-// intercept for y = mx + b when calculating the position of the lift
-constexpr int TICKS_OFFSET = 10;
-
 // hex values for ewellix specific params
 constexpr int MOT1 = 0x00;
 constexpr int MOT2 = 0x01;
@@ -51,7 +44,8 @@ std::vector<int> SPEED_LOW_LIMIT_DOWN = {29, 29}; // As percentage of 100
 
 SerialComTlt::SerialComTlt()
     : run_(true), debug_(false), stop_loop_(false), com_started_(false),
-      first_time_(true), height_limit_(0.7),
+      first_time_(true), height_limit_(0.7), meters_to_ticks_(3222.65),
+      ticks_offset_(20),
       desired_pose_(std::numeric_limits<double>::quiet_NaN()),
       desired_velocity_(0.0), current_pose_(0.0), previous_pose_(0.0),
       current_velocity_(0.0), commanded_velocity_(0.0), mot1_pose_(0),
@@ -171,23 +165,6 @@ void SerialComTlt::moveMot2Pose(int pose) {
   sendCmd("RE", &params); // move
 }
 
-/// Control the column size
-void SerialComTlt::setColumnSize(double height) {
-  if (height > height_limit_) {
-    height = height_limit_;
-  }
-
-  if (getColumnSize() == height)
-    return; // current pose = desired pose
-
-  mot_ticks_ = (height * METERS_TO_TICKS) + TICKS_OFFSET;
-  if (height <= 0)
-    mot_ticks_ = TICKS_OFFSET; // min
-  stop();
-  moveMot1Pose(mot_ticks_);
-  moveMot2Pose(mot_ticks_);
-}
-
 ///  Move up both motors
 void SerialComTlt::moveUp() {
   moveMot1Up();
@@ -284,12 +261,14 @@ double SerialComTlt::getColumnSize() {
   getPoseM2();
   previous_pose_ = current_pose_;
   current_pose_ =
-      double(mot1_pose_ + mot2_pose_ - 2 * TICKS_OFFSET) * TICKS_TO_METERS;
+      double(mot1_pose_ + mot2_pose_ - ticks_offset_) * 1.0 / meters_to_ticks_;
 
   // get individual values in meters to use for logic to choose which stack
   // to command
-  mot1_pose_m_ = double(mot1_pose_ - TICKS_OFFSET) * TICKS_TO_METERS;
-  mot2_pose_m_ = double(mot2_pose_ - TICKS_OFFSET) * TICKS_TO_METERS;
+  mot1_pose_m_ =
+      double(mot1_pose_ - ticks_offset_ / 2) * 1.0 / meters_to_ticks_;
+  mot2_pose_m_ =
+      double(mot2_pose_ - ticks_offset_ / 2) * 1.0 / meters_to_ticks_;
 
   return current_pose_;
 }

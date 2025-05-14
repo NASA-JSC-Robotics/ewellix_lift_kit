@@ -8,6 +8,7 @@
     tf_prefix:=''
     parent:=world
     height_limit:=0.7
+    hw_calibration:=${dict(meters_to_ticks=3222.65,ticks_offset=20)}
     omit_plates:=false
     is_700:=true
     is_500:=false
@@ -321,6 +322,7 @@
       tf_prefix="${tf_prefix}"
       com_port="${com_port}"
       height_limit="${height_limit}"
+      hw_calibration="${hw_calibration}"
     />
 
 
