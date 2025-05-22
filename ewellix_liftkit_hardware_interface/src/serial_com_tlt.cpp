@@ -262,8 +262,9 @@ double SerialComTlt::getColumnSize() {
   getPoseM2();
   previous_pose_ = current_pose_;
 
-  int ticks_offset = (min_ticks_mot_1_ - min_ticks_mot_2_) -
+  int ticks_offset = (min_ticks_mot_1_ + min_ticks_mot_2_) -
                      static_cast<int>(meters_to_ticks_ * min_height_m_);
+
   current_pose_ =
       double(mot1_pose_ + mot2_pose_ - ticks_offset) * 1.0 / meters_to_ticks_;
 
@@ -298,7 +299,7 @@ void SerialComTlt::calibrationComLoop(std::string calibration_direction) {
       getColumnSize();
 
       if (first_time_) {
-        setLiftSpeed(50);
+        setLiftSpeed(100);
         if (calibration_direction == "up") {
           moveMot1Up();
           moveMot2Up();
@@ -314,10 +315,10 @@ void SerialComTlt::calibrationComLoop(std::string calibration_direction) {
                            "Calibration complete! Direction: %s",
                            calibration_direction.c_str());
           RCLCPP_INFO_ONCE(rclcpp::get_logger("LiftkitHardwareInterface"),
-                           "mot1_%s_ticks_: %i", min_max_string.c_str(),
+                           "mot1_%s_ticks: %i", min_max_string.c_str(),
                            mot1_pose_);
           RCLCPP_INFO_ONCE(rclcpp::get_logger("LiftkitHardwareInterface"),
-                           "mot2_%s_ticks_: %i", min_max_string.c_str(),
+                           "mot2_%s_ticks: %i", min_max_string.c_str(),
                            mot2_pose_);
         }
       } else {

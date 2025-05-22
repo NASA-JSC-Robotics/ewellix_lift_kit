@@ -47,10 +47,11 @@ CallbackReturn LiftkitHardwareInterface::on_init(
   max_ticks_mot_1 = stoi(system_info.hardware_parameters["max_ticks_mot_1"]);
   min_ticks_mot_2 = stoi(system_info.hardware_parameters["min_ticks_mot_2"]);
   max_ticks_mot_2 = stoi(system_info.hardware_parameters["max_ticks_mot_2"]);
-  min_height_m = stoi(system_info.hardware_parameters["min_height_m"]);
-  max_height_m = stoi(system_info.hardware_parameters["max_height_m"]);
-  meters_to_ticks =
-      (max_ticks_mot_1 + max_ticks_mot_2) / (max_height_m - min_height_m);
+  min_height_m = stof(system_info.hardware_parameters["min_height_m"]);
+  max_height_m = stof(system_info.hardware_parameters["max_height_m"]);
+  meters_to_ticks = double((max_ticks_mot_1 + max_ticks_mot_2) -
+                           (min_ticks_mot_1 + min_ticks_mot_2)) /
+                    (max_height_m - min_height_m);
   calibration_direction =
       system_info.hardware_parameters["calibration_direction"];
   if (calibration_direction != "none" && calibration_direction != "up" &&
