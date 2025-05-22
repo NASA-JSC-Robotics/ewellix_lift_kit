@@ -45,7 +45,8 @@ std::vector<int> SPEED_LOW_LIMIT_DOWN = {29, 29}; // As percentage of 100
 SerialComTlt::SerialComTlt()
     : run_(true), debug_(false), stop_loop_(false), com_started_(false),
       first_time_(true), height_limit_(0.7), meters_to_ticks_(3222.65),
-      ticks_offset_(20),
+      min_ticks_mot_1_(10), max_ticks_mot_1_(800), min_ticks_mot_2_(10),
+      max_ticks_mot_2_(800),
       desired_pose_(std::numeric_limits<double>::quiet_NaN()),
       desired_velocity_(0.0), current_pose_(0.0), previous_pose_(0.0),
       current_velocity_(0.0), commanded_velocity_(0.0), mot1_pose_(0),
@@ -260,15 +261,11 @@ double SerialComTlt::getColumnSize() {
   getPoseM1();
   getPoseM2();
   previous_pose_ = current_pose_;
-  current_pose_ =
-      double(mot1_pose_ + mot2_pose_ - ticks_offset_) * 1.0 / meters_to_ticks_;
 
-  // get individual values in meters to use for logic to choose which stack
-  // to command
-  mot1_pose_m_ =
-      double(mot1_pose_ - ticks_offset_ / 2) * 1.0 / meters_to_ticks_;
-  mot2_pose_m_ =
-      double(mot2_pose_ - ticks_offset_ / 2) * 1.0 / meters_to_ticks_;
+  int ticks_offset = (min_ticks_mot_1_ - min_ticks_mot_2_) -
+                     static_cast<int>(meters_to_ticks_ * min_height_m_);
+  current_pose_ =
+      double(mot1_pose_ + mot2_pose_ - ticks_offset) * 1.0 / meters_to_ticks_;
 
   return current_pose_;
 }
@@ -286,6 +283,54 @@ void SerialComTlt::getPoseM1() {
 void SerialComTlt::getPoseM2() {
   vector<unsigned char> params = {MOT2_ADDR, 0x00};
   sendCmd("RG", &params);
+}
+
+/// Loop to maintain the remote function with RC command
+void SerialComTlt::calibrationComLoop(std::string calibration_direction) {
+  vector<unsigned char> params = {0x01, 0x00, 0xff};
+
+  // run this while ROS has told us we are good to go
+  while (run_) {
+    while (com_started_) {
+      sendCmd("RC", &params);
+
+      // get the position data from the liftkit for ROS
+      getColumnSize();
+
+      if (first_time_) {
+        setLiftSpeed(50);
+        if (calibration_direction == "up") {
+          moveMot1Up();
+          moveMot2Up();
+        } else if (calibration_direction == "down") {
+          moveMot1Down();
+          moveMot2Down();
+        }
+      } else if (current_pose_ == previous_pose_) {
+        if (calibration_counter++ > 10) {
+          std::string min_max_string =
+              calibration_direction == "up" ? "max" : "min";
+          RCLCPP_INFO_ONCE(rclcpp::get_logger("LiftkitHardwareInterface"),
+                           "Calibration complete! Direction: %s",
+                           calibration_direction.c_str());
+          RCLCPP_INFO_ONCE(rclcpp::get_logger("LiftkitHardwareInterface"),
+                           "mot1_%s_ticks_: %i", min_max_string.c_str(),
+                           mot1_pose_);
+          RCLCPP_INFO_ONCE(rclcpp::get_logger("LiftkitHardwareInterface"),
+                           "mot2_%s_ticks_: %i", min_max_string.c_str(),
+                           mot2_pose_);
+        }
+      } else {
+        calibration_counter = 0;
+      }
+
+      // no longer the first loop
+      first_time_ = false;
+
+      usleep(100);
+    }
+    usleep(1);
+  }
 }
 
 /// Loop to maintain the remote function with RC command
@@ -347,11 +392,12 @@ void SerialComTlt::comLoop() {
 
       // default initialize speed commands to 0s
       speed_commands_ = {0, 0};
-      constexpr double max_height_epsilon = 0.001;
+      constexpr int max_height_epsilon =
+          10; // number of ticks away from extreme that we switch motors
       // if we are moving up, and mot1 is < (0.35 - epsilon), use mot1
       // otherwise use mot2
       if (curr_dirs_[0] == MOVING_UP) {
-        if (mot1_pose_m_ < (height_limit_ / 2 - max_height_epsilon))
+        if (mot1_pose_ < max_ticks_mot_1_ - max_height_epsilon)
           speed_commands_[0] = speed_command;
         else
           speed_commands_[1] = speed_command;
@@ -359,7 +405,7 @@ void SerialComTlt::comLoop() {
       // if we are moving down, and mot2 is < (0 + epsilon), use mot1
       // otherwise use mot2
       else if (curr_dirs_[0] == MOVING_DOWN) {
-        if (mot2_pose_m_ < (0 + max_height_epsilon))
+        if (mot2_pose_ < (min_ticks_mot_2_ + max_height_epsilon))
           speed_commands_[0] = speed_command;
         else
           speed_commands_[1] = speed_command;

@@ -1,2 +1,6 @@
-meters_to_ticks: 3222.65
-ticks_offset: 20
+min_ticks_mot_1: 13
+max_ticks_mot_1: 860
+min_ticks_mot_2: 19
+max_ticks_mot_2: 800
+min_height_m: 0.0
+max_height_m: 0.563

@@ -43,8 +43,24 @@ CallbackReturn LiftkitHardwareInterface::on_init(
   system_info = info_;
   port = system_info.hardware_parameters["com_port"];
   height_limit = stof(system_info.hardware_parameters["height_limit"]);
-  ticks_offset = stoi(system_info.hardware_parameters["ticks_offset"]);
-  meters_to_ticks = stof(system_info.hardware_parameters["meters_to_ticks"]);
+  min_ticks_mot_1 = stoi(system_info.hardware_parameters["min_ticks_mot_1"]);
+  max_ticks_mot_1 = stoi(system_info.hardware_parameters["max_ticks_mot_1"]);
+  min_ticks_mot_2 = stoi(system_info.hardware_parameters["min_ticks_mot_2"]);
+  max_ticks_mot_2 = stoi(system_info.hardware_parameters["max_ticks_mot_2"]);
+  min_height_m = stoi(system_info.hardware_parameters["min_height_m"]);
+  max_height_m = stoi(system_info.hardware_parameters["max_height_m"]);
+  meters_to_ticks =
+      (max_ticks_mot_1 + max_ticks_mot_2) / (max_height_m - min_height_m);
+  calibration_direction =
+      system_info.hardware_parameters["calibration_direction"];
+  if (calibration_direction != "none" && calibration_direction != "up" &&
+      calibration_direction != "down") {
+    RCLCPP_ERROR(rclcpp::get_logger("LiftkitHardwareInterface"),
+                 "The only possible calibration_direction options are 'none', "
+                 "'up', and 'down'. You chose '%s'",
+                 calibration_direction.c_str());
+    return CallbackReturn::FAILURE;
+  }
 
   first_loop = true;
   first_non_nan_loop = true;
@@ -56,7 +72,12 @@ CallbackReturn LiftkitHardwareInterface::on_init(
 CallbackReturn LiftkitHardwareInterface::on_configure(
     const rclcpp_lifecycle::State & /*previous_state*/) {
   srl_.height_limit_ = height_limit;
-  srl_.ticks_offset_ = ticks_offset;
+  srl_.min_ticks_mot_1_ = min_ticks_mot_1;
+  srl_.max_ticks_mot_1_ = max_ticks_mot_1;
+  srl_.min_ticks_mot_2_ = min_ticks_mot_2;
+  srl_.max_ticks_mot_2_ = max_ticks_mot_2;
+  srl_.min_height_m_ = min_height_m;
+  srl_.max_height_m_ = max_height_m;
   srl_.meters_to_ticks_ = meters_to_ticks;
   RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
               "Successfully configured!");
@@ -124,12 +145,16 @@ CallbackReturn LiftkitHardwareInterface::on_activate(
     hw_states_extra_[i] = 0;
   }
 
-  RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "here!");
   // // Trying to instantiate the driver
   try {
     if (srl_.startSerialCom(port, 38400)) {
-      com_thread_ = thread(&SerialComTlt::comLoop, &srl_); //  RC thread
-      if (srl_.startRs232Com()) {                          // Com started
+      if (calibration_direction == "none") {
+        com_thread_ = thread(&SerialComTlt::comLoop, &srl_); //  RC thread
+      } else {
+        com_thread_ = thread(&SerialComTlt::calibrationComLoop, &srl_,
+                             calibration_direction); //  RC thread
+      }
+      if (srl_.startRs232Com()) { // Com started
         RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"),
                     "Successfully connected!");
       } else {

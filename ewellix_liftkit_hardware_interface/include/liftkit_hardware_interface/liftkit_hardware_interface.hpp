@@ -71,11 +71,22 @@ protected:
   hardware_interface::HardwareInfo system_info;
   std::string port;
   double height_limit;
-  int ticks_offset;
   double meters_to_ticks;
+  std::string calibration_direction;
   double previous_position_;
   SerialComTlt srl_;
   thread com_thread_;
+
+  double
+      min_ticks_mot_1; // minimum ticks recordable on motor 1, set in hwi params
+  double
+      max_ticks_mot_1; // maximum ticks recordable on motor 1, set in hwi params
+  double
+      min_ticks_mot_2; // minimum ticks recordable on motor 2, set in hwi params
+  double
+      max_ticks_mot_2; // maximum ticks recordable on motor 2, set in hwi params
+  double min_height_m; // meters to ticks conversion, set in hwi params
+  double max_height_m; // meters to ticks conversion, set in hwi params
 
   bool first_loop;         // whether or not this is the first run through write
   bool first_non_nan_loop; // whether or not this is the first run through write
