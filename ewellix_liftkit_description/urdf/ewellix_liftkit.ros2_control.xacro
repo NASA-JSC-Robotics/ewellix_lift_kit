@@ -6,7 +6,8 @@
     tf_prefix
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
-    height_limit:=0.7">
+    height_limit:=0.7
+    use_gazebo:=false">
 
     <xacro:unless value="${use_fake_hardware}">
       <ros2_control name="${name}" type="actuator">
@@ -46,5 +47,48 @@
         </joint>
       </ros2_control>
     </xacro:if>
+
+    <!-- FOR LAUNCHING GAZEBO - Simplified LINKAGE SYSTEM -->
+    <xacro:if value="${use_gazebo}">
+      <ros2_control name="${name}" type="system">
+          <hardware>
+              <plugin>ign_ros2_control/IgnitionSystem</plugin>
+          </hardware>
+          <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
+            <command_interface name="position"/>
+            <state_interface name="position">
+              <param name="initial_value">${height_limit}</param>
+            </state_interface>
+            <state_interface name="velocity"/>
+            <state_interface name="effort"/>
+          </joint>
+          <joint name="${tf_prefix}middle_mimic_higher">
+          <command_interface name="position">
+            <state_interface name="position">
+              <param name="initial_value">${middle_upper_limit}</param>
+            </state_interface>
+            </command_interface>
+            <param name="mimic">${tf_prefix}ewellix_lift_lower_to_higher</param>
+            <param name="multiplier">0.5</param>
+          </joint>
+      </ros2_control>
+
+      <gazebo>
+        <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+          <parameters>$(find ewellix_liftkit_deploy)/config/liftkit_controllers.yaml</parameters>
+        </plugin>
+      </gazebo>
+
+      <gazebo>
+        <plugin filename="libignition-gazebo-pose-publisher-system.so" name="ignition::gazebo::systems::PosePublisher">
+          <publish_link_pose>true</publish_link_pose>
+          <publish_nested_model_pose>true</publish_nested_model_pose>
+          <use_pose_vector_msg>true</use_pose_vector_msg>
+          <update_frequency>50</update_frequency>
+        </plugin>
+      </gazebo>
+
+    </xacro:if>
+
   </xacro:macro>
 </robot>

@@ -8,6 +8,7 @@ from launch.conditions import IfCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch.conditions import IfCondition, UnlessCondition
 
 
 def generate_launch_description():
@@ -73,6 +74,20 @@ def generate_launch_description():
             description="launch rviz",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "world_file",
+            default_value="empty.sdf",
+            description="Gazebo world file (absolute path or filename from the gazebosim worlds collection) containing a custom world.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_gazebo",
+            default_value="false",
+            description="Launches gazebo",
+        )
+    )
     robot_name = LaunchConfiguration("robot_name")
     tf_prefix = LaunchConfiguration("tf_prefix")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
@@ -81,6 +96,9 @@ def generate_launch_description():
     height_limit = LaunchConfiguration("height_limit")
     is_500 = LaunchConfiguration("is_500")
     is_700 = LaunchConfiguration("is_700")
+    world_file = LaunchConfiguration("world_file")
+    use_gazebo = LaunchConfiguration("use_gazebo")
+
 
     robot_description_content = Command(
         [
@@ -109,6 +127,9 @@ def generate_launch_description():
             "is_700:=",
             is_700,
             " ",
+            "use_gazebo:=",
+            use_gazebo,
+            " ",
         ]
     )
     robot_description = {"robot_description": robot_description_content}
@@ -117,25 +138,18 @@ def generate_launch_description():
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="screen",
-        parameters=[robot_description],
+        parameters=[robot_description,
+            {"use_sim_time": use_gazebo}],
     )
 
-    controller_common_params = os.path.join(
-        get_package_share_directory("ewellix_liftkit_deploy"), "config", "controllers_common.yaml"
-    )
-
-    controller_liftkit_params = os.path.join(
+    controller_params_file = os.path.join(
         get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
     )
 
     controller_manager = Node(
         package="controller_manager",
         executable="ros2_control_node",
-        parameters=[
-            robot_description,
-            controller_common_params,
-            controller_liftkit_params,
-        ],
+        parameters=[robot_description, controller_params_file],
     )
 
     joint_state_broadcaster_spawner = Node(
@@ -143,8 +157,8 @@ def generate_launch_description():
         executable="spawner",
         arguments=[
             "joint_state_broadcaster",
-            "-c",
-            "controller_manager",
+            # "-c",
+            # "controller_manager",
             "--controller-manager-timeout",
             "100",
         ],
@@ -159,9 +173,50 @@ def generate_launch_description():
         output="log",
         arguments=["-d", rviz_config_file],
         condition=IfCondition(rviz),
+        parameters=[
+            {"use_sim_time": use_gazebo}]
+    )
+    # GZ nodes
+    gz_spawn_entity = Node(
+        package="ros_gz_sim",
+        executable="create",
+        output="screen",
+        arguments=[
+            '-topic', 'robot_description',
+            "-name",
+            "ewellix_liftkit",
+            "-allow_renaming",
+            "true",
+        ],
     )
 
-    nodes = [robot_state_publisher, controller_manager, joint_state_broadcaster_spawner, rviz_node]
+    gz_launch_description_with_gui = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
+        ),
+        launch_arguments={"gz_args": [" -r -v 4 ", world_file]}.items(),
+        condition=IfCondition(use_gazebo),
+    )
+
+    gz_launch_description_without_gui = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
+        ),
+        launch_arguments={"gz_args": [" -s -r -v 4 ", world_file]}.items(),
+        condition=UnlessCondition(use_gazebo),
+    )
+
+   
+    gz_sim_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=[
+            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+        ],
+        output="screen",
+    )
+
+    nodes = [robot_state_publisher, joint_state_broadcaster_spawner, rviz_node, gz_spawn_entity, gz_launch_description_with_gui, gz_launch_description_without_gui, gz_sim_bridge]
 
     spawn_controllers_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
