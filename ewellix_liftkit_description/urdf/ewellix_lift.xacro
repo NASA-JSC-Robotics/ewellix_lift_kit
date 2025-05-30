@@ -78,7 +78,7 @@
       <xacro:property name="lift_higher_link_izz" value="0.069925583" scope="parent"/>
 
 
-      <!-- <xacro:property name="higher_to_top_origin_z" value="0.2515"/>
+      <xacro:property name="higher_to_top_origin_z" value="0.2515"/>
 
       <xacro:property name="top_mass_value" value="4.9139525"/>
       <xacro:property name="top_box_size" value="0.200 0.220 0.015"/>
@@ -89,7 +89,7 @@
       <xacro:property name="lift_top_link_iyz" value="0.0" scope="parent"/>
       <xacro:property name="lift_top_link_izz" value="0.03661307" scope="parent"/>
 
-      <xacro:property name="lift_tip_joint_origin_z" value="0.244"/> -->
+      <xacro:property name="lift_tip_joint_origin_z" value="0.244"/>
 
     </xacro:if>
 
@@ -113,7 +113,6 @@
       <xacro:property name="lift_base_link_izz" value="0.012717018" scope="parent"/>
 
       <xacro:property name="base_to_lower_origin_z" value="0.2457"/>
-      <!-- <xacro:property name="base_to_lower_origin_z" value="0.015"/> -->
 
       <xacro:property name="lower_mass_value" value="6.746306"/>
       <xacro:property name="lower_box_size" value="0.163 0.163 0.4764"/>
@@ -150,9 +149,9 @@
       <xacro:property name="lift_higher_link_iyz" value="0" scope="parent"/>
       <xacro:property name="lift_higher_link_izz" value="0.024552208" scope="parent"/>
 
-      <!-- <xacro:property name="higher_to_top_origin_z" value="0.2525"/> -->
+      <xacro:property name="higher_to_top_origin_z" value="0.2525"/>
 
-      <!-- <xacro:property name="top_mass_value" value="1.718423"/>
+      <xacro:property name="top_mass_value" value="1.718423"/>
       <xacro:property name="top_box_size" value="0.200 0.220 0.015"/>
       <xacro:property name="lift_top_link_ixx" value="0.0058195514" scope="parent"/>
       <xacro:property name="lift_top_link_ixy" value="0.0" scope="parent"/>
@@ -161,7 +160,7 @@
       <xacro:property name="lift_top_link_iyz" value="0.0" scope="parent"/>
       <xacro:property name="lift_top_link_izz" value="0.012803695" scope="parent"/>
 
-      <xacro:property name="lift_tip_joint_origin_z" value="0.245"/> -->
+      <xacro:property name="lift_tip_joint_origin_z" value="0.245"/>
 
     </xacro:if>
 
@@ -204,8 +203,7 @@
       </inertial>
       <visual>
         <geometry>
-          <!-- <mesh filename= "${lower_mesh_filename}"/> -->
-          <box size="${lower_box_size}"/>
+          <mesh filename= "${lower_mesh_filename}"/>
         </geometry>
         <material name="gray"/>
       </visual>
@@ -233,8 +231,7 @@
       </inertial>
       <visual>
         <geometry>
-          <!-- <mesh filename= "${middle_mesh_filename}"/> -->
-          <box size="${middle_box_size}"/>
+          <mesh filename= "${middle_mesh_filename}"/>
         </geometry>
         <material name="gray"/>
       </visual>
@@ -253,8 +250,7 @@
       </inertial>
       <visual>
         <geometry>
-          <!-- <mesh filename= "${higher_mesh_filename}"/> -->
-          <box size="${higher_box_size}"/>
+          <mesh filename= "${higher_mesh_filename}"/>
         </geometry>
         <material name="gray"/>
       </visual>
@@ -264,7 +260,6 @@
         </geometry>
       </collision>
     </link>
-
 
     <!--LOWER TO HIGHER (PRISMATIC)-->
     <joint name="${tf_prefix}ewellix_lift_lower_to_higher" type="prismatic">
@@ -283,6 +278,44 @@
       <axis xyz="0 0 -1"/>
       <limit lower="0" upper="${middle_upper_limit}" effort="1000" velocity="1"/>
       <mimic joint="${tf_prefix}ewellix_lift_lower_to_higher" multiplier="0.5" offset="0"/>
+    </joint>
+
+     <!--TOP (omit_plates=false)-->
+    <xacro:if value="${not omit_plates}">
+      <link name="${tf_prefix}ewellix_lift_top_link">
+        <inertia>
+          <mass value="${top_mass_value}"/>
+          <inertia ixx="${lift_top_link_ixx}" ixy="${lift_top_link_ixy}" ixz="${lift_top_link_ixz}" iyy="${lift_top_link_iyy}" iyz="${lift_top_link_iyz}" izz="${lift_top_link_izz}"/>
+        </inertia>
+        <visual>
+          <geometry>
+            <box size="${top_box_size}"/>
+          </geometry>
+          <material name="gray"/>
+        </visual>
+        <collision>
+          <geometry>
+            <box size="${top_box_size}"/>
+          </geometry>
+        </collision>
+      </link>
+    </xacro:if>
+
+    <!--HIGHER TO TOP (FIXED, omit_plates=false)-->
+    <xacro:if value="${not omit_plates}">
+      <joint name="${tf_prefix}higher_to_top" type="fixed">
+        <parent link="${tf_prefix}ewellix_lift_higher_link"/>
+        <child link="${tf_prefix}ewellix_lift_top_link"/>
+        <origin xyz="0 0 ${higher_to_top_origin_z}" rpy="0 0 0"/>
+      </joint>
+    </xacro:if>
+
+    <link name="${tf_prefix}ewellix_lift_tip_link"/>
+
+    <joint name="${tf_prefix}ewellix_lift_tip_joint" type="fixed">
+      <parent link="${tf_prefix}ewellix_lift_higher_link"/>
+      <child link="${tf_prefix}ewellix_lift_tip_link"/>
+      <origin xyz="0 0 ${lift_tip_joint_origin_z}" rpy="0 0 0"/>
     </joint>
 
     <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_liftkit.ros2_control.xacro" />

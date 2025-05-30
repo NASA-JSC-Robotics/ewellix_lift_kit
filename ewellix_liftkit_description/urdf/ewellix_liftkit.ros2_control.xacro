@@ -48,7 +48,7 @@
       </ros2_control>
     </xacro:if>
 
-    <!-- FOR LAUNCHING GAZEBO - Simplified LINKAGE SYSTEM -->
+    <!-- FOR LAUNCHING GAZEBO -->
     <xacro:if value="${use_gazebo}">
       <ros2_control name="${name}" type="system">
           <hardware>
@@ -72,21 +72,6 @@
             <param name="multiplier">0.5</param>
           </joint>
       </ros2_control>
-
-      <gazebo>
-        <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
-          <parameters>$(find ewellix_liftkit_deploy)/config/liftkit_controllers.yaml</parameters>
-        </plugin>
-      </gazebo>
-
-      <gazebo>
-        <plugin filename="libignition-gazebo-pose-publisher-system.so" name="ignition::gazebo::systems::PosePublisher">
-          <publish_link_pose>true</publish_link_pose>
-          <publish_nested_model_pose>true</publish_nested_model_pose>
-          <use_pose_vector_msg>true</use_pose_vector_msg>
-          <update_frequency>50</update_frequency>
-        </plugin>
-      </gazebo>
 
     </xacro:if>
 
