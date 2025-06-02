@@ -14,6 +14,7 @@
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
     use_gazebo:=false
+    generate_ros2_control_tag=true
     *origin
   ">
 
@@ -318,17 +319,16 @@
       <origin xyz="0 0 ${lift_tip_joint_origin_z}" rpy="0 0 0"/>
     </joint>
 
-    <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_liftkit.ros2_control.xacro" />
-    <xacro:ewellix_liftkit_ros2_control
-      name="${name}"
-      use_fake_hardware="${use_fake_hardware}"
-      tf_prefix="${tf_prefix}"
-      com_port="${com_port}"
-      height_limit="${height_limit}"
-      use_gazebo="${use_gazebo}"
-    />
-
-
+    <xacro:if value="${generate_ros2_control_tag}">
+      <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_liftkit.ros2_control.xacro" />
+      <xacro:ewellix_liftkit_ros2_control
+        name="${name}"
+        use_fake_hardware="${use_fake_hardware}"
+        use_gazebo="${use_gazebo}"
+        tf_prefix="${tf_prefix}"
+        com_port="${com_port}"
+        height_limit="${height_limit}"
+      />
+    </xacro:if>
   </xacro:macro>
-
 </robot>
