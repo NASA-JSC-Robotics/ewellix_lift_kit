@@ -13,6 +13,7 @@
     is_500:=false
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
+    use_gazebo:=false
     *origin
   ">
 
@@ -36,11 +37,12 @@
       <xacro:property name="lift_base_link_iyz" value="0.0" scope="parent"/>
       <xacro:property name="lift_base_link_izz" value="0.0127170180" scope="parent"/>
 
+
       <xacro:property name="base_to_lower_origin_z" value="0.295"/>
 
       <xacro:property name="lower_mass_value" value="19.521070"/>
       <xacro:property name="lower_box_size" value="0.163 0.163 0.575"/>
-      <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low_700mm.dae"/>
+      <xacro:property name="lower_mesh_filename" value="file://$(find ewellix_liftkit_description)/meshes/visual/lift_low_700mm.dae"/>
       <xacro:property name="lift_lower_link_ixx" value="0.46604111" scope="parent"/>
       <xacro:property name="lift_lower_link_ixy" value="0.0" scope="parent"/>
       <xacro:property name="lift_lower_link_ixz" value="0.0" scope="parent"/>
@@ -48,11 +50,12 @@
       <xacro:property name="lift_lower_link_iyz" value="-0.002668667" scope="parent"/>
       <xacro:property name="lift_lower_link_izz" value="0.1561" scope="parent"/>
 
+
       <xacro:property name="lower_to_higher_origin_z" value="0.0915"/>
 
       <xacro:property name="middle_mass_value" value="15.593303"/>
       <xacro:property name="middle_box_size" value="0.146 0.146 0.483"/>
-      <xacro:property name="middle_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_mid_700mm.dae"/>
+      <xacro:property name="middle_mesh_filename" value="file://$(find ewellix_liftkit_description)/meshes/visual/lift_mid_700mm.dae"/>
       <xacro:property name="lift_middle_link_ixx" value="0.34930648" scope="parent"/>
       <xacro:property name="lift_middle_link_ixy" value="0.0" scope="parent"/>
       <xacro:property name="lift_middle_link_ixz" value="0.0" scope="parent"/>
@@ -60,18 +63,20 @@
       <xacro:property name="lift_middle_link_iyz" value="0.0" scope="parent"/>
       <xacro:property name="lift_middle_link_izz" value="0.095393471" scope="parent"/>
 
+
       <xacro:property name="middle_to_higher_origin_z" value="-0.03397"/>
-      <xacro:property name="middle_upper_limit" value="0.351"/>
+      <xacro:property name="middle_upper_limit" value="0.35"/>
 
       <xacro:property name="higher_mass_value" value="15.166778"/>
       <xacro:property name="higher_box_size" value="0.129 0.129 0.488"/>
-      <xacro:property name="higher_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_high_700mm.dae"/>
+      <xacro:property name="higher_mesh_filename" value="file://$(find ewellix_liftkit_description)/meshes/visual/lift_high_700mm.dae"/>
       <xacro:property name="lift_higher_link_ixx" value="0.35552099" scope="parent"/>
       <xacro:property name="lift_higher_link_ixy" value="0.000009631" scope="parent"/>
       <xacro:property name="lift_higher_link_ixz" value="0.000022848" scope="parent"/>
       <xacro:property name="lift_higher_link_iyy" value="0.35552876" scope="parent"/>
       <xacro:property name="lift_higher_link_iyz" value="0.000054910" scope="parent"/>
       <xacro:property name="lift_higher_link_izz" value="0.069925583" scope="parent"/>
+
 
       <xacro:property name="higher_to_top_origin_z" value="0.2515"/>
 
@@ -107,13 +112,11 @@
       <xacro:property name="lift_base_link_iyz" value="0" scope="parent"/>
       <xacro:property name="lift_base_link_izz" value="0.012717018" scope="parent"/>
 
-
       <xacro:property name="base_to_lower_origin_z" value="0.2457"/>
-
 
       <xacro:property name="lower_mass_value" value="6.746306"/>
       <xacro:property name="lower_box_size" value="0.163 0.163 0.4764"/>
-      <xacro:property name="lower_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_low_500mm.stl"/>
+      <xacro:property name="lower_mesh_filename" value="file://$(find ewellix_liftkit_description)/meshes/visual/lift_low_500mm.stl"/>
       <xacro:property name="lift_lower_link_ixx" value="0.1579129" scope="parent"/>
       <xacro:property name="lift_lower_link_ixy" value="0" scope="parent"/>
       <xacro:property name="lift_lower_link_ixz" value="0" scope="parent"/>
@@ -121,12 +124,11 @@
       <xacro:property name="lift_lower_link_iyz" value="0" scope="parent"/>
       <xacro:property name="lift_lower_link_izz" value="0.053799503" scope="parent"/>
 
-
       <xacro:property name="lower_to_higher_origin_z" value="0.0068"/>
 
       <xacro:property name="middle_mass_value" value="5.411604"/>
       <xacro:property name="middle_box_size" value="0.146 0.146 0.4794"/>
-      <xacro:property name="middle_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_mid_500mm.stl"/>
+      <xacro:property name="middle_mesh_filename" value="file://$(find ewellix_liftkit_description)/meshes/visual/lift_mid_500mm.stl"/>
       <xacro:property name="lift_middle_link_ixx" value="0.11963018" scope="parent"/>
       <xacro:property name="lift_middle_link_ixy" value="0" scope="parent"/>
       <xacro:property name="lift_middle_link_ixz" value="0" scope="parent"/>
@@ -139,14 +141,13 @@
 
       <xacro:property name="higher_mass_value" value="5.324879"/>
       <xacro:property name="higher_box_size" value="0.129 0.129 0.490"/>
-      <xacro:property name="higher_mesh_filename" value="package://ewellix_liftkit_description/meshes/visual/lift_high_500mm.stl"/>
+      <xacro:property name="higher_mesh_filename" value="file://$(find ewellix_liftkit_description)/meshes/visual/lift_high_500mm.stl"/>
       <xacro:property name="lift_higher_link_ixx" value="0.12572077" scope="parent"/>
       <xacro:property name="lift_higher_link_ixy" value="0" scope="parent"/>
       <xacro:property name="lift_higher_link_ixz" value="0" scope="parent"/>
       <xacro:property name="lift_higher_link_iyy" value="0.12571806" scope="parent"/>
       <xacro:property name="lift_higher_link_iyz" value="0" scope="parent"/>
       <xacro:property name="lift_higher_link_izz" value="0.024552208" scope="parent"/>
-
 
       <xacro:property name="higher_to_top_origin_z" value="0.2525"/>
 
@@ -176,10 +177,10 @@
     <!--BASE (omit_plates=false)-->
     <xacro:if value="${not omit_plates}">
       <link name="${tf_prefix}ewellix_lift_base_link">
-        <inertia>
+        <inertial>
           <mass value="${base_mass_value}"/>
           <inertia ixx="${lift_base_link_ixx}" ixy="${lift_base_link_ixy}" ixz="${lift_base_link_ixz}" iyy="${lift_base_link_iyy}" iyz="${lift_base_link_iyz}" izz="${lift_base_link_izz}"/>
-        </inertia>
+        </inertial>
         <visual>
           <geometry>
             <box size="${base_box_size}"/>
@@ -196,10 +197,10 @@
 
     <!--LOWER-->
     <link name="${tf_prefix}ewellix_lift_lower_link">
-      <inertia>
+      <inertial>
         <mass value="${lower_mass_value}"/>
         <inertia ixx="${lift_lower_link_ixx}" ixy="${lift_lower_link_ixy}" ixz="${lift_lower_link_ixz}" iyy="${lift_lower_link_iyy}" iyz="${lift_lower_link_iyz}" izz="${lift_lower_link_izz}"/>
-      </inertia>
+      </inertial>
       <visual>
         <geometry>
           <mesh filename= "${lower_mesh_filename}"/>
@@ -224,10 +225,10 @@
 
     <!--MIDDLE-->
     <link name="${tf_prefix}ewellix_lift_middle_link">
-      <inertia>
+      <inertial>
         <mass value="${middle_mass_value}"/>
         <inertia ixx="${lift_middle_link_ixx}" ixy="${lift_middle_link_ixy}" ixz="${lift_middle_link_ixz}" iyy="${lift_middle_link_iyy}" iyz="${lift_middle_link_iyz}" izz="${lift_middle_link_izz}"/>
-      </inertia>
+      </inertial>
       <visual>
         <geometry>
           <mesh filename= "${middle_mesh_filename}"/>
@@ -243,10 +244,10 @@
 
     <!--HIGHER-->
     <link name="${tf_prefix}ewellix_lift_higher_link">
-      <inertia>
+      <inertial>
         <mass value="${higher_mass_value}"/>
         <inertia ixx="${lift_higher_link_ixx}" ixy="${lift_higher_link_ixy}" ixz="${lift_higher_link_ixz}" iyy="${lift_higher_link_iyy}" iyz="${lift_higher_link_iyz}" izz="${lift_higher_link_izz}"/>
-      </inertia>
+      </inertial>
       <visual>
         <geometry>
           <mesh filename= "${higher_mesh_filename}"/>
@@ -259,7 +260,6 @@
         </geometry>
       </collision>
     </link>
-
 
     <!--LOWER TO HIGHER (PRISMATIC)-->
     <joint name="${tf_prefix}ewellix_lift_lower_to_higher" type="prismatic">
@@ -280,7 +280,7 @@
       <mimic joint="${tf_prefix}ewellix_lift_lower_to_higher" multiplier="0.5" offset="0"/>
     </joint>
 
-    <!--TOP (omit_plates=false)-->
+     <!--TOP (omit_plates=false)-->
     <xacro:if value="${not omit_plates}">
       <link name="${tf_prefix}ewellix_lift_top_link">
         <inertia>
@@ -325,6 +325,7 @@
       tf_prefix="${tf_prefix}"
       com_port="${com_port}"
       height_limit="${height_limit}"
+      use_gazebo="${use_gazebo}"
     />
 
 
