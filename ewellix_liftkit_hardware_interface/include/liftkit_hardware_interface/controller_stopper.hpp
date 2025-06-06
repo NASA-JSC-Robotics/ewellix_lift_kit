@@ -10,11 +10,11 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
 
-class ControllerStopper {
+class ControllerStopper
+{
 public:
   ControllerStopper() = delete;
-  ControllerStopper(const rclcpp::Node::SharedPtr &node,
-                    bool stop_controllers_on_startup);
+  ControllerStopper(const rclcpp::Node::SharedPtr& node, bool stop_controllers_on_startup);
   virtual ~ControllerStopper() = default;
 
 private:
@@ -37,10 +37,8 @@ private:
   void startControllers();
 
   std::shared_ptr<rclcpp::Node> node_;
-  rclcpp::Client<controller_manager_msgs::srv::SwitchController>::SharedPtr
-      controller_manager_srv_;
-  rclcpp::Client<controller_manager_msgs::srv::ListControllers>::SharedPtr
-      controller_list_srv_;
+  rclcpp::Client<controller_manager_msgs::srv::SwitchController>::SharedPtr controller_manager_srv_;
+  rclcpp::Client<controller_manager_msgs::srv::ListControllers>::SharedPtr controller_list_srv_;
 
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr robot_running_sub_;
 
@@ -50,4 +48,4 @@ private:
   bool stop_controllers_on_startup_;
   bool robot_running_;
 };
-#endif // LIFTKIT_CONTROLLER_STOPPER_HPP_
+#endif  // LIFTKIT_CONTROLLER_STOPPER_HPP_
