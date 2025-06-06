@@ -1,11 +1,8 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-
-    declared_arguments = []
 
     position_trajectory_controller_spawner = Node(
         package="controller_manager",
@@ -21,6 +18,4 @@ def generate_launch_description():
         ],
     )
 
-    nodes = [position_trajectory_controller_spawner]
-
-    return LaunchDescription(declared_arguments + nodes)
+    return LaunchDescription([position_trajectory_controller_spawner])
