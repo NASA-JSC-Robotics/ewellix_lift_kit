@@ -127,7 +127,7 @@
       <xacro:property name="lift_lower_link_iyz" value="0" scope="parent"/>
       <xacro:property name="lift_lower_link_izz" value="0.053799503" scope="parent"/>
 
-      <xacro:property name="lower_to_higher_origin_z" value="0.0068"/>
+      <xacro:property name="lower_to_higher_origin_z" value="0.0368"/>
 
       <xacro:property name="middle_mass_value" value="5.411604"/>
       <xacro:property name="middle_box_size" value="0.146 0.146 0.4794"/>
@@ -139,7 +139,7 @@
       <xacro:property name="lift_middle_link_iyz" value="0" scope="parent"/>
       <xacro:property name="lift_middle_link_izz" value="0.033099694" scope="parent"/>
 
-      <xacro:property name="middle_to_higher_origin_z" value="-0.0053"/>
+      <xacro:property name="middle_to_higher_origin_z" value="-0.0303"/>
       <xacro:property name="middle_upper_limit" value="0.25"/>
 
       <xacro:property name="higher_mass_value" value="5.324879"/>
