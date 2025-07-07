@@ -12,6 +12,7 @@
   <xacro:arg name="is_700" default="true" />
   <xacro:arg name="is_500" default="false" />
   <xacro:arg name="hw_calibration_file" default="$(find ewellix_liftkit_description)/config/default_config.yaml"/>
+  <xacro:arg name="use_gazebo" default="false" />
 
   <link name="world"/>
 
@@ -32,6 +33,7 @@
     use_fake_hardware="$(arg use_fake_hardware)"
     com_port="$(arg com_port)"
     hw_calibration="${xacro.load_yaml(hw_calibration_file)}"
+    use_gazebo="$(arg use_gazebo)"
   >
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </xacro:ewellix_lift>
