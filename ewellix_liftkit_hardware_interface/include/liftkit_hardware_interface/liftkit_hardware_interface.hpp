@@ -74,31 +74,31 @@ protected:
 
   std::vector<double> hw_commands_positions_;
 
-  hardware_interface::HardwareInfo system_info;
-  std::string port;
-  double height_limit;
-  double meters_to_ticks;
-  std::string calibration_direction;
+  hardware_interface::HardwareInfo system_info_;
+  std::string port_;
+  double height_limit_;
+  double meters_to_ticks_;
+  std::string calibration_direction_;
   double previous_position_;
   SerialComTlt srl_;
   thread com_thread_;
 
-  double min_ticks_mot_1;  // minimum ticks recordable on motor 1, set in hwi params
-  double max_ticks_mot_1;  // maximum ticks recordable on motor 1, set in hwi params
-  double min_ticks_mot_2;  // minimum ticks recordable on motor 2, set in hwi params
-  double max_ticks_mot_2;  // maximum ticks recordable on motor 2, set in hwi params
-  double min_height_m;     // meters to ticks conversion, set in hwi params
-  double max_height_m;     // meters to ticks conversion, set in hwi params
+  double min_ticks_mot_1_;  // minimum ticks recordable on motor 1, set in hwi params
+  double max_ticks_mot_1_;  // maximum ticks recordable on motor 1, set in hwi params
+  double min_ticks_mot_2_;  // minimum ticks recordable on motor 2, set in hwi params
+  double max_ticks_mot_2_;  // maximum ticks recordable on motor 2, set in hwi params
+  double min_height_m_;     // meters to ticks conversion, set in hwi params
+  double max_height_m_;     // meters to ticks conversion, set in hwi params
 
-  bool first_loop;          // whether or not this is the first run through write
-  bool first_non_nan_loop;  // whether or not this is the first run through write
+  bool first_loop_;          // whether or not this is the first run through write
+  bool first_non_nan_loop_;  // whether or not this is the first run through write
   bool warned_;             // whether or not the user has been warned
 
-  double dt;                       // delta time from last loop to this loop
-  double last_commanded_position;  // commanded position last write loop
-  rclcpp::Time last_time;          // time recorded from previous write loop
+  double dt_;                       // delta time from last loop to this loop
+  double last_commanded_position_;  // commanded position last write loop
+  rclcpp::Time last_time_;          // time recorded from previous write loop
 
-  double ema_filter_coeff = 0.9;  // filter coefficient for EMA, has to be in (0,1)
+  double ema_filter_coeff_ = 0.9;  // filter coefficient for EMA, has to be in (0,1)
 
   // exponential moving average class to help filter velocity
   class EMA
