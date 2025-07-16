@@ -356,9 +356,10 @@ void SerialComTlt::calibrationComLoop(std::string calibration_direction)
 {
   vector<unsigned char> params = { 0x01, 0x00, 0xff };
 
-  // run this while ROS has told us we are good to go
+  // run_ starts as true with class initialization and is true until the HWI kills the program
   while (run_)
   {
+    // com_started_ is set to true on connection of comm, so we are good to actually do communication
     while (com_started_)
     {
       sendCmd("RC", &params);
@@ -415,9 +416,10 @@ void SerialComTlt::comLoop()
   auto last_time = std::chrono::steady_clock::now();
   auto curr_time = std::chrono::steady_clock::now();
 
-  // run this while ROS has told us we are good to go
+  // run_ starts as true with class initialization and is true until the HWI kills the program
   while (run_)
   {
+    // com_started_ is set to true on connection of comm, so we are good to actually do communication
     while (com_started_)
     {
       sendCmd("RC", &params);
