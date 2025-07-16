@@ -165,7 +165,7 @@ bool SerialComTlt::startRs232Com()
 bool SerialComTlt::stopRs232Com()
 {
   com_started_ = false;
-  usleep(100);
+  std::this_thread::sleep_for(std::chrono::microseconds(100));
   vector<unsigned char> params = {};
   bool result = sendCmd("RA", &params);
 
@@ -401,9 +401,9 @@ void SerialComTlt::calibrationComLoop(std::string calibration_direction)
       // no longer the first loop
       first_time_ = false;
 
-      usleep(100);
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
-    usleep(1);
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
   }
 }
 
@@ -553,9 +553,9 @@ void SerialComTlt::comLoop()
       last_dirs_ = curr_dirs_;
       last_time = curr_time;
 
-      usleep(100);
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
-    usleep(1);
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
   }
 }
 
@@ -601,7 +601,7 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char>* param)
     try
     {
       serial_tlt_.write(final_cmd);
-      usleep(1);
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
       serial_tlt_.flush();
       stop_loop_ = false;
     }
@@ -610,7 +610,7 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char>* param)
       RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Output Cmd: %s", e.what());
     }
   }
-  usleep(10);
+  std::this_thread::sleep_for(std::chrono::microseconds(10));
 
   vector<unsigned char> output = feedback();
   if (output.size() == 0)
@@ -634,7 +634,7 @@ bool SerialComTlt::sendCmd(string cmd, vector<unsigned char>* param)
   {
     RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "SerialComTlt::sendCmd - Cmd failed, retry");
     serial_tlt_.flush();
-    usleep(300);
+    std::this_thread::sleep_for(std::chrono::microseconds(300));
     serial_tlt_.write(final_cmd);
 
     output = feedback();
@@ -751,7 +751,7 @@ vector<unsigned char> SerialComTlt::feedback()
     }
     else
     {
-      usleep(1);
+      std::this_thread::sleep_for(std::chrono::microseconds(1));
       timeout++;
       if (timeout > 5000)
       {
