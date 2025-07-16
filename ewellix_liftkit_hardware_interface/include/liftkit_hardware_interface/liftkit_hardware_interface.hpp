@@ -92,7 +92,7 @@ protected:
 
   bool first_loop_;          // whether or not this is the first run through write
   bool first_non_nan_loop_;  // whether or not this is the first run through write
-  bool warned_;             // whether or not the user has been warned
+  bool warned_;              // whether or not the user has been warned
 
   double dt_;                       // delta time from last loop to this loop
   double last_commanded_position_;  // commanded position last write loop

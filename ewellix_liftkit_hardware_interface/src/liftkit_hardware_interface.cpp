@@ -59,8 +59,8 @@ CallbackReturn LiftkitHardwareInterface::on_init(const hardware_interface::Hardw
   max_ticks_mot_2_ = stoi(system_info_.hardware_parameters["max_ticks_mot_2"]);
   min_height_m_ = stof(system_info_.hardware_parameters["min_height_m"]);
   max_height_m_ = stof(system_info_.hardware_parameters["max_height_m"]);
-  meters_to_ticks_ =
-      double((max_ticks_mot_1_ + max_ticks_mot_2_) - (min_ticks_mot_1_ + min_ticks_mot_2_)) / (max_height_m_ - min_height_m_);
+  meters_to_ticks_ = double((max_ticks_mot_1_ + max_ticks_mot_2_) - (min_ticks_mot_1_ + min_ticks_mot_2_)) /
+                     (max_height_m_ - min_height_m_);
   calibration_direction_ = system_info_.hardware_parameters["calibration_direction"];
   if (calibration_direction_ != "none" && calibration_direction_ != "up" && calibration_direction_ != "down")
   {
