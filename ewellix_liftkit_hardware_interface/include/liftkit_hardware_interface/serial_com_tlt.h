@@ -69,12 +69,14 @@ public:
   void moveUp();
   void moveDown();
   void stop();
-  void setColumnSize(double height);
   double getColumnSize();
   double getColumnVelocity();
 
   // Thread running control
   void comLoop();
+
+  // thread for doing calibration
+  void calibrationComLoop(std::string calibration_direction);
 
   // Vars
   bool run_;          // variable for hwi to set for when it wants us to run loops
@@ -83,7 +85,20 @@ public:
   bool com_started_;  // handles when to exit communication loop
   bool first_time_;   // whether this is the first time through the loop
 
-  double height_limit_;  // height limit for stack, set in hwi params
+  int calibration_counter;  // calibration counter
+
+  double height_limit_;     // height limit for stack, set in hwi params
+  double meters_to_ticks_;  // meters to ticks conversion, set in hwi params
+  double min_ticks_mot_1_;  // minimum ticks recordable on motor 1, set in hwi
+                            // params
+  double max_ticks_mot_1_;  // maximum ticks recordable on motor 1, set in hwi
+                            // params
+  double min_ticks_mot_2_;  // minimum ticks recordable on motor 2, set in hwi
+                            // params
+  double max_ticks_mot_2_;  // maximum ticks recordable on motor 2, set in hwi
+                            // params
+  double min_height_m_;     // meters to ticks conversion, set in hwi params
+  double max_height_m_;     // meters to ticks conversion, set in hwi params
 
   double desired_pose_;        // target position from other system
   double desired_velocity_;    // desired velocity from other system

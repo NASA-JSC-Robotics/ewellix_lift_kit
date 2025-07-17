@@ -7,6 +7,8 @@
     use_fake_hardware:=false
     com_port:=/dev/ttyUSB0
     height_limit:=0.7
+    calibration_direction:=none
+    hw_calibration:=${dict(min_ticks_mot_1=10,min_ticks_mot_2=10,max_ticks_mot_1=800,max_ticks_mot_2=860,min_height_m=0.0,max_height_m=0.7)}
     use_gazebo:=false">
 
     <xacro:unless value="${use_fake_hardware}">
@@ -16,6 +18,13 @@
             <param name="lift_name">liftkit</param>
             <param name="com_port">${com_port}</param>
             <param name="height_limit">${height_limit}</param>
+            <param name="calibration_direction">${calibration_direction}</param>
+            <param name="min_ticks_mot_1">${hw_calibration['min_ticks_mot_1']}</param>
+            <param name="min_ticks_mot_2">${hw_calibration['min_ticks_mot_2']}</param>
+            <param name="max_ticks_mot_1">${hw_calibration['max_ticks_mot_1']}</param>
+            <param name="max_ticks_mot_2">${hw_calibration['max_ticks_mot_2']}</param>
+            <param name="min_height_m">${hw_calibration['min_height_m']}</param>
+            <param name="max_height_m">${hw_calibration['max_height_m']}</param>
         </hardware>
 
         <joint name="${tf_prefix}ewellix_lift_lower_to_higher">

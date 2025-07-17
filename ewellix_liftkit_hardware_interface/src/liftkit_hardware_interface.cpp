@@ -50,20 +50,44 @@ CallbackReturn LiftkitHardwareInterface::on_init(const hardware_interface::Hardw
 
   hw_commands_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
   // signal(SIGINT, signal_callback_handler);
-  system_info = info_;
-  port = system_info.hardware_parameters["com_port"];
-  height_limit = stof(system_info.hardware_parameters["height_limit"]);
+  system_info_ = info_;
+  port_ = system_info_.hardware_parameters["com_port"];
+  height_limit_ = stof(system_info_.hardware_parameters["height_limit"]);
+  min_ticks_mot_1_ = stoi(system_info_.hardware_parameters["min_ticks_mot_1"]);
+  max_ticks_mot_1_ = stoi(system_info_.hardware_parameters["max_ticks_mot_1"]);
+  min_ticks_mot_2_ = stoi(system_info_.hardware_parameters["min_ticks_mot_2"]);
+  max_ticks_mot_2_ = stoi(system_info_.hardware_parameters["max_ticks_mot_2"]);
+  min_height_m_ = stof(system_info_.hardware_parameters["min_height_m"]);
+  max_height_m_ = stof(system_info_.hardware_parameters["max_height_m"]);
+  meters_to_ticks_ = double((max_ticks_mot_1_ + max_ticks_mot_2_) - (min_ticks_mot_1_ + min_ticks_mot_2_)) /
+                     (max_height_m_ - min_height_m_);
+  calibration_direction_ = system_info_.hardware_parameters["calibration_direction"];
+  if (calibration_direction_ != "none" && calibration_direction_ != "up" && calibration_direction_ != "down")
+  {
+    RCLCPP_ERROR(rclcpp::get_logger("LiftkitHardwareInterface"),
+                 "The only possible calibration_direction options are 'none', "
+                 "'up', and 'down'. You chose '%s'",
+                 calibration_direction_.c_str());
+    return CallbackReturn::FAILURE;
+  }
 
-  first_loop = true;
-  first_non_nan_loop = true;
+  first_loop_ = true;
+  first_non_nan_loop_ = true;
 
-  desired_vel_ema_ = std::make_shared<EMA>(ema_filter_coeff);
+  desired_vel_ema_ = std::make_shared<EMA>(ema_filter_coeff_);
   return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn LiftkitHardwareInterface::on_configure(const rclcpp_lifecycle::State& /*previous_state*/)
 {
-  srl_.height_limit_ = height_limit;
+  srl_.height_limit_ = height_limit_;
+  srl_.min_ticks_mot_1_ = min_ticks_mot_1_;
+  srl_.max_ticks_mot_1_ = max_ticks_mot_1_;
+  srl_.min_ticks_mot_2_ = min_ticks_mot_2_;
+  srl_.max_ticks_mot_2_ = max_ticks_mot_2_;
+  srl_.min_height_m_ = min_height_m_;
+  srl_.max_height_m_ = max_height_m_;
+  srl_.meters_to_ticks_ = meters_to_ticks_;
   RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully configured!");
   return CallbackReturn::SUCCESS;
 }
@@ -121,9 +145,17 @@ CallbackReturn LiftkitHardwareInterface::on_activate(const rclcpp_lifecycle::Sta
   // // Trying to instantiate the driver
   try
   {
-    if (srl_.startSerialCom(port, 38400))
+    if (srl_.startSerialCom(port_, 38400))
     {
-      com_thread_ = thread(&SerialComTlt::comLoop, &srl_);  //  RC thread
+      if (calibration_direction_ == "none")
+      {
+        com_thread_ = thread(&SerialComTlt::comLoop, &srl_);  //  RC thread
+      }
+      else
+      {
+        com_thread_ = thread(&SerialComTlt::calibrationComLoop, &srl_,
+                             calibration_direction_);  //  RC thread
+      }
       if (srl_.startRs232Com())
       {  // Com started
         RCLCPP_INFO(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully connected!");
@@ -134,10 +166,26 @@ CallbackReturn LiftkitHardwareInterface::on_activate(const rclcpp_lifecycle::Sta
         return CallbackReturn::ERROR;
       }
     }
+    else
+    {
+      RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"), "Failed to start serial connection");
+      return CallbackReturn::ERROR;
+    }
   }
   catch (boost::system::system_error& e)
   {
     RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"), "TCP error: '%s'", e.what());
+    return CallbackReturn::ERROR;
+  }
+  catch (serial::IOException& e)
+  {
+    RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"), "serial io exception: '%s'", e.what());
+    return CallbackReturn::ERROR;
+  }
+  catch (...)
+  {
+    RCLCPP_FATAL(rclcpp::get_logger("LiftkitHardwareInterface"),
+                 "Unknown Exception caught. Returning failure on activate");
     return CallbackReturn::ERROR;
   }
   RCLCPP_DEBUG(rclcpp::get_logger("LiftkitHardwareInterface"), "Successfully activated!");
@@ -188,14 +236,14 @@ hardware_interface::return_type LiftkitHardwareInterface::write(const rclcpp::Ti
 
   // if it is the first loop, there is no way to calculate dt, so use
   // the expected period instead. Otherwise, calculate dt each loop
-  if (first_loop)
+  if (first_loop_)
   {
-    dt = period.seconds();
-    first_loop = false;
+    dt_ = period.seconds();
+    first_loop_ = false;
   }
   else
   {
-    dt = (time - last_time).seconds();
+    dt_ = (time - last_time_).seconds();
   }
 
   // if we have a nan value, don't command a new position, and set velocity to
@@ -207,26 +255,26 @@ hardware_interface::return_type LiftkitHardwareInterface::write(const rclcpp::Ti
   }
   else
   {
-    if (first_non_nan_loop)
+    if (first_non_nan_loop_)
     {
-      last_commanded_position = hw_commands_positions_[0];
-      first_non_nan_loop = false;
+      last_commanded_position_ = hw_commands_positions_[0];
+      first_non_nan_loop_ = false;
     }
     warned_ = false;
-    if (hw_commands_positions_[0] > height_limit)
+    if (hw_commands_positions_[0] > height_limit_)
     {
-      srl_.desired_pose_ = height_limit;
+      srl_.desired_pose_ = height_limit_;
       if (!warned_)
       {
         RCLCPP_WARN(rclcpp::get_logger("LiftkitHardwareInterface"),
                     "Commanded Height of %0.3f was greater than height limit of "
                     "%0.3f! height "
                     "being clamped.",
-                    hw_commands_positions_[0], height_limit);
+                    hw_commands_positions_[0], height_limit_);
         warned_ = true;
       }
     }
-    else if (hw_commands_positions_[0] <= height_limit && warned_)
+    else if (hw_commands_positions_[0] <= height_limit_ && warned_)
     {
       warned_ = false;
       srl_.desired_pose_ = hw_commands_positions_[0];
@@ -237,14 +285,14 @@ hardware_interface::return_type LiftkitHardwareInterface::write(const rclcpp::Ti
     }
 
     // filter the desired velocity and set it in the ewellix class
-    double raw_velocity = (srl_.desired_pose_ - last_commanded_position) / dt;
+    double raw_velocity = (srl_.desired_pose_ - last_commanded_position_) / dt_;
     desired_vel_ema_->add_value(raw_velocity);
     srl_.desired_velocity_ = desired_vel_ema_->get_average();
   }
 
   // store current values to reference next loop
-  last_time = time;
-  last_commanded_position = srl_.desired_pose_;
+  last_time_ = time;
+  last_commanded_position_ = srl_.desired_pose_;
 
   return hardware_interface::return_type::OK;
 }
