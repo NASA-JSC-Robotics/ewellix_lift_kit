@@ -8,6 +8,7 @@ install(DIRECTORY
     meshes
     rviz
     urdf
+    config
     DESTINATION share/${PROJECT_NAME})
 
 ament_export_dependencies(${THIS_PACKAGE_INCLUDE_DEPENDS})
