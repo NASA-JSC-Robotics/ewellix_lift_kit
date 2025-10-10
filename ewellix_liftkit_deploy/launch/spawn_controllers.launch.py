@@ -32,8 +32,6 @@ def generate_launch_description():
             "100",
             "-c",
             "controller_manager",
-            "-t",
-            "joint_trajectory_controller/JointTrajectoryController",
         ],
     )
 
