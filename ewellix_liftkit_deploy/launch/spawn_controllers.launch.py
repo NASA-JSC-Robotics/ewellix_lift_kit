@@ -18,14 +18,27 @@
 # under the License.
 
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
+from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
 
+    declared_arguments = []
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "namespace",
+            default_value="",
+            description="Namespace for the robot.",
+        )
+    )
+    namespace = LaunchConfiguration("namespace")
+
     position_trajectory_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
+        namespace=namespace,
         arguments=[
             "lift_position_trajectory_controller",
             "--controller-manager-timeout",
@@ -35,4 +48,4 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([position_trajectory_controller_spawner])
+    return LaunchDescription(declared_arguments + [position_trajectory_controller_spawner])
