@@ -26,6 +26,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -42,7 +43,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "tf_prefix",
-            default_value='""',
+            default_value="",
             description="Prefix of the joint names, useful for \
         multi-robot setup. If changed than also joint names in the controllers' configuration \
         have to be updated.",
@@ -139,12 +140,14 @@ def generate_launch_description():
         parameters=[robot_description],
     )
 
-    controller_common_params = os.path.join(
-        get_package_share_directory("ewellix_liftkit_deploy"), "config", "controllers_common.yaml"
+    controller_common_params = ParameterFile(
+        PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "config", "controllers_common.yaml"]),
+        allow_substs=True,
     )
 
-    controller_liftkit_params = os.path.join(
-        get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
+    controller_liftkit_params = ParameterFile(
+        PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"]),
+        allow_substs=True,
     )
 
     controller_manager = Node(

@@ -26,4 +26,4 @@
       constraints:
         stopped_velocity_tolerance: 0.2
         goal_time: 0.0
-        ewellix_lift_lower_to_higher: { trajectory: 0.2, goal: 0.1 }
+        $(var tf_prefix)ewellix_lift_lower_to_higher: { trajectory: 0.2, goal: 0.1 }
