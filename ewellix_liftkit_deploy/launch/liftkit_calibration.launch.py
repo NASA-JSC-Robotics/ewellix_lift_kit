@@ -17,12 +17,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -74,8 +73,9 @@ def generate_launch_description():
         parameters=[robot_description],
     )
 
-    controller_params_file = os.path.join(
-        get_package_share_directory("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"
+    controller_params_file = ParameterFile(
+        PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"]),
+        allow_substs=True,
     )
 
     controller_manager = Node(
