@@ -1,4 +1,4 @@
-#include "ElmoController.h"
+#include "liftkit_hardware_interface/ElmoController.h"
 
 #include <iostream>
 #include <cstring>
@@ -152,8 +152,8 @@ string ElmoController::sendCommandAndRead(const string& cmd,
                                  strerror(errno));
     }
 
-    // Small delay so the drive can prepare its response
-    this_thread::sleep_for(chrono::milliseconds(50));
+    // Small delay so the drive can prepare its response, 500 Hz
+    this_thread::sleep_for(chrono::milliseconds(2));
 
     // --- Read loop: discard echo, return the first numeric-looking line ---
     string response;

@@ -58,6 +58,7 @@ public:
     string getSerialNumber();
 
     float getElmoTemperature();
+    
 };
 
 #endif // ELMO_CONTROLLER_H
