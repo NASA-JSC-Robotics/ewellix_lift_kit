@@ -1,0 +1,10 @@
+<library path="elmo_liftkit_hardware_interface">
+  <class
+    name="liftkit_hardware_interface/ElmoLiftkitHardwareInterface"
+    type="liftkit_hardware_interface::ElmoLiftkitHardwareInterface"
+    base_class_type="hardware_interface::SystemInterface">
+    <description>
+      Elmo-based liftkit ros2_control hardware interface
+    </description>
+  </class>
+</library>
