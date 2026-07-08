@@ -3,85 +3,94 @@
 
   <xacro:macro name="ewellix_liftkit_ros2_control" params="
     name
-    tf_prefix
+    tf_prefix:=''
     use_fake_hardware:=false
-    com_port:=/dev/ttyUSB0
+    use_gazebo:=false
+    com_port_top:=/dev/ttyACM0
+    com_port_bottom:=/dev/ttyACM1
     height_limit:=0.7
     initial_value:=0.0
     calibration_direction:=none
-    hw_calibration:=${dict(min_ticks_mot_1=10,min_ticks_mot_2=10,max_ticks_mot_1=800,max_ticks_mot_2=860,min_height_m=0.0,max_height_m=0.7)}
-    use_gazebo:=false">
+    max_ticks_mot_1:=872
+    max_ticks_mot_2:=871
+    min_height_m:=0.048
+    max_height_m:=0.587
+    homing_current_a:=0.5
+    stall_velocity_thresh:=5
+    stall_time_ms:=400
+    homing_timeout_ms:=15000
+    poll_ms:=20
+    backoff_counts:=500
+    top_home_direction:=1
+    bottom_home_direction:=1">
 
-    <xacro:unless value="${use_fake_hardware}">
-      <ros2_control name="${name}" type="actuator">
+    <!-- Single system controlling both motors -->
+    <xacro:if value="${not (use_fake_hardware or use_gazebo)}">
+      <!-- REAL HARDWARE -->
+      <ros2_control name="ewellix_liftkit" type="system">
         <hardware>
-            <plugin>liftkit_hardware_interface/LiftkitHardwareInterface</plugin>
-            <param name="lift_name">liftkit</param>
-            <param name="com_port">${com_port}</param>
-            <param name="height_limit">${height_limit}</param>
-            <param name="calibration_direction">${calibration_direction}</param>
-            <param name="min_ticks_mot_1">${hw_calibration['min_ticks_mot_1']}</param>
-            <param name="min_ticks_mot_2">${hw_calibration['min_ticks_mot_2']}</param>
-            <param name="max_ticks_mot_1">${hw_calibration['max_ticks_mot_1']}</param>
-            <param name="max_ticks_mot_2">${hw_calibration['max_ticks_mot_2']}</param>
-            <param name="min_height_m">${hw_calibration['min_height_m']}</param>
-            <param name="max_height_m">${hw_calibration['max_height_m']}</param>
-        </hardware>
-
-        <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
-          <command_interface name="position"/>
-          <state_interface name="position"/>
-          <state_interface name="velocity"/>
-          <state_interface name="robot_ready"/>
-        </joint>
-      </ros2_control>
-    </xacro:unless>
-
-    <xacro:if value="${use_fake_hardware}">
-      <ros2_control name="${name}" type="system">
-        <hardware>
-            <plugin>mock_components/GenericSystem</plugin>
+          <plugin>liftkit_hardware_interface/ElmoLiftkitHardwareInterface</plugin>
+          <param name="com_port_top">${com_port_top}</param>
+          <param name="com_port_bottom">${com_port_bottom}</param>
+          <param name="min_height_m">${min_height_m}</param>
+          <param name="max_height_m">${max_height_m}</param>
+          <param name="max_ticks_mot_1">${max_ticks_mot_1}</param>
+          <param name="max_ticks_mot_2">${max_ticks_mot_2}</param>
+          <param name="homing_current_a">${homing_current_a}</param>
+          <param name="stall_velocity_thresh">${stall_velocity_thresh}</param>
+          <param name="stall_time_ms">${stall_time_ms}</param>
+          <param name="homing_timeout_ms">${homing_timeout_ms}</param>
+          <param name="poll_ms">${poll_ms}</param>
+          <param name="backoff_counts">${backoff_counts}</param>
+          <param name="top_home_direction">${top_home_direction}</param>
+          <param name="bottom_home_direction">${bottom_home_direction}</param>
+          <param name="calibration_direction">${calibration_direction}</param>
+          <param name="height_limit">${height_limit}</param>
         </hardware>
         <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
           <command_interface name="position">
-            <param name="min">0</param>
-            <param name="height_limit">${height_limit}</param>
+            <param name="min">${min_height_m}</param>
+            <param name="max">${max_height_m}</param>
           </command_interface>
-          <state_interface name="position">
-            <param name="initial_value">${initial_value}</param>
-          </state_interface>
+          <state_interface name="position"/>
           <state_interface name="velocity"/>
-          <state_interface name="robot_ready"/>
         </joint>
       </ros2_control>
     </xacro:if>
 
-    <!-- FOR LAUNCHING GAZEBO -->
-    <xacro:if value="${use_gazebo}">
-      <ros2_control name="${name}" type="system">
-          <hardware>
-              <plugin>ign_ros2_control/IgnitionSystem</plugin>
-          </hardware>
-          <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
-            <command_interface name="position"/>
-            <state_interface name="position">
-              <param name="initial_value">${height_limit}</param>
-            </state_interface>
-            <state_interface name="velocity"/>
-            <state_interface name="effort"/>
-          </joint>
-          <joint name="${tf_prefix}middle_mimic_higher">
+    <!-- FAKE HARDWARE -->
+    <xacro:if value="${use_fake_hardware}">
+      <ros2_control name="ewellix_liftkit" type="system">
+        <hardware>
+          <plugin>liftkit_hardware_interface/ElmoLiftkitHardwareInterface</plugin>
+          <param name="com_port_top">/dev/null</param>
+          <param name="com_port_bottom">/dev/null</param>
+          <param name="min_height_m">${min_height_m}</param>
+          <param name="max_height_m">${max_height_m}</param>
+          <param name="max_ticks_mot_1">${max_ticks_mot_1}</param>
+          <param name="max_ticks_mot_2">${max_ticks_mot_2}</param>
+          <param name="homing_current_a">${homing_current_a}</param>
+          <param name="stall_velocity_thresh">${stall_velocity_thresh}</param>
+          <param name="stall_time_ms">${stall_time_ms}</param>
+          <param name="homing_timeout_ms">${homing_timeout_ms}</param>
+          <param name="poll_ms">${poll_ms}</param>
+          <param name="backoff_counts">${backoff_counts}</param>
+          <param name="top_home_direction">${top_home_direction}</param>
+          <param name="bottom_home_direction">${bottom_home_direction}</param>
+          <param name="calibration_direction">${calibration_direction}</param>
+          <param name="height_limit">${height_limit}</param>
+        </hardware>
+        <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
           <command_interface name="position">
-            <state_interface name="position">
-              <param name="initial_value">${middle_upper_limit}</param>
-            </state_interface>
-            </command_interface>
-            <param name="mimic">${tf_prefix}ewellix_lift_lower_to_higher</param>
-            <param name="multiplier">0.5</param>
-          </joint>
+            <param name="min">${min_height_m}</param>
+            <param name="max">${max_height_m}</param>
+          </command_interface>
+          <state_interface name="position"/>
+          <state_interface name="velocity"/>
+        </joint>
       </ros2_control>
-
     </xacro:if>
 
   </xacro:macro>
+
 </robot>

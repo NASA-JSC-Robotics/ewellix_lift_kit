@@ -2,7 +2,7 @@
 #include <iomanip>
 #include <string>
 #include <map>
-#include "include/liftkit_hardware_interface/ElmoController.h"
+#include "liftkit_hardware_interface/ElmoController.h"
 
 using namespace std;
 
@@ -83,8 +83,8 @@ int main() {
         elmoTop.sendRawCommand("SD=100");
         elmoBot.sendRawCommand("SD=100");
 
-        elmoTop.sendRawCommand("SP=100");
-        elmoBot.sendRawCommand("SP=100");
+        elmoTop.sendRawCommand("SP=30");
+        elmoBot.sendRawCommand("SP=30");
         elmoTop.wait(50);
 
         // Step 3: Motor on

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <limits>
 #include <algorithm>
+#include <thread>
 
 using namespace std;
 
@@ -84,6 +85,12 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_configure(
   state_velocity_ = 0.0;
   command_position_ = 0.0;
 
+  // Initialize cached values
+  cached_top_ticks_ = 0;
+  cached_bottom_ticks_ = 0;
+  cached_top_vel_ = 0;
+  cached_bottom_vel_ = 0;
+
   if (!is_fake_hardware_)
   {
     elmo_top_ = make_unique<ElmoController>(port_top_, 115200);
@@ -97,6 +104,12 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_configure(
 CallbackReturn ElmoLiftkitHardwareInterface::on_cleanup(
     const rclcpp_lifecycle::State& /*previous_state*/)
 {
+  polling_active_ = false;
+  if (polling_thread_.joinable())
+  {
+    polling_thread_.join();
+  }
+
   if (elmo_top_) try { elmo_top_->disconnect(); } catch (...) {}
   if (elmo_bottom_) try { elmo_bottom_->disconnect(); } catch (...) {}
   return CallbackReturn::SUCCESS;
@@ -126,6 +139,36 @@ std::vector<hardware_interface::CommandInterface> ElmoLiftkitHardwareInterface::
   return command_interfaces;
 }
 
+void ElmoLiftkitHardwareInterface::pollingThreadLoop()
+{
+  RCLCPP_INFO(get_logger(), "Polling thread started");
+
+  while (polling_active_)
+  {
+    try
+    {
+      if (elmo_top_ && elmo_bottom_)
+      {
+        // Read both motors' position and velocity
+        // This runs in background, doesn't block the control loop
+        cached_top_ticks_ = elmo_top_->getPosition();
+        cached_bottom_ticks_ = elmo_bottom_->getPosition();
+        cached_top_vel_ = elmo_top_->getVelocity();
+        cached_bottom_vel_ = elmo_bottom_->getVelocity();
+      }
+    }
+    catch (const exception& e)
+    {
+      RCLCPP_WARN(get_logger(), "Polling thread error: %s", e.what());
+    }
+
+    // Small sleep to prevent 100% CPU spin, but keep latency low
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  }
+
+  RCLCPP_INFO(get_logger(), "Polling thread stopped");
+}
+
 CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/)
 {
@@ -137,15 +180,77 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
     {
       elmo_top_->connect();
       elmo_bottom_->connect();
-      elmo_top_->setVelocityMode();
-      elmo_bottom_->setVelocityMode();
+
+      elmo_top_->wait(500);
+
+      // Verify/correct top vs bottom assignment via serial number
+      static const map<string, string> kElmoMap = {
+          {"20210922", "bottomMotor"},
+          {"20210926", "topMotor"}
+      };
+
+      string sn_top = elmo_top_->getSerialNumber();
+      string sn_bottom = elmo_bottom_->getSerialNumber();
+
+      RCLCPP_INFO(get_logger(), "Top port SN: %s (%s)", sn_top.c_str(),
+                  kElmoMap.count(sn_top) ? kElmoMap.at(sn_top).c_str() : "UNKNOWN");
+      RCLCPP_INFO(get_logger(), "Bottom port SN: %s (%s)", sn_bottom.c_str(),
+                  kElmoMap.count(sn_bottom) ? kElmoMap.at(sn_bottom).c_str() : "UNKNOWN");
+
+      if (kElmoMap.count(sn_top) && kElmoMap.at(sn_top) != "topMotor")
+      {
+        RCLCPP_WARN(get_logger(), "Port mismatch detected — swapping top/bottom controllers");
+        std::swap(elmo_top_, elmo_bottom_);
+      }
+
+      elmo_top_->motorOff(); 
+      elmo_bottom_->motorOff(); 
+      elmo_top_->setPositionMode();
+      elmo_bottom_->setPositionMode();
+      elmo_top_->sendRawCommand("AC=100");
+      elmo_bottom_->sendRawCommand("AC=100");
+      elmo_top_->sendRawCommand("DC=500");
+      elmo_bottom_->sendRawCommand("DC=500");
+      elmo_top_->sendRawCommand("SD=500");
+      elmo_bottom_->sendRawCommand("SD=500");
+      elmo_top_->sendRawCommand("SP=30");
+      elmo_bottom_->sendRawCommand("SP=30");
       elmo_top_->motorOn();
       elmo_bottom_->motorOn();
+
+      // Read actual current position from hardware before syncing command setpoint
+      int32_t top_ticks = elmo_top_->getPosition();
+      int32_t bottom_ticks = elmo_bottom_->getPosition();
+      int32_t total_ticks = top_ticks + bottom_ticks;
+
+      // CORRECTED FORMULA: scale ticks to height range
+      double pos = (static_cast<double>(total_ticks) / max_ticks_total_) * 
+                   (max_height_m_ - min_height_m_) + min_height_m_;
+
+      RCLCPP_INFO(get_logger(), "Initial position: Top=%d ticks, Bottom=%d ticks, Total=%d ticks -> %.3f m",
+                  top_ticks, bottom_ticks, total_ticks, pos);
+
+      state_position_ = pos;
+      command_position_ = state_position_;
+
+      // Initialize cached values with current state
+      cached_top_ticks_ = top_ticks;
+      cached_bottom_ticks_ = bottom_ticks;
+      cached_top_vel_ = 0;
+      cached_bottom_vel_ = 0;
+
+      // Start background polling thread
+      polling_active_ = true;
+      polling_thread_ = std::thread(&ElmoLiftkitHardwareInterface::pollingThreadLoop, this);
+
+      RCLCPP_INFO(get_logger(), "Successfully activated! Polling thread started.");
     }
-
-    command_position_ = state_position_;
-
-    RCLCPP_INFO(get_logger(), "Successfully activated!");
+    else
+    {
+      // Fake hardware: no polling needed
+      state_position_ = 0.0;
+      command_position_ = 0.0;
+    }
   }
   catch (const exception& e)
   {
@@ -161,6 +266,12 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_deactivate(
 {
   RCLCPP_INFO(get_logger(), "Deactivating...");
 
+  polling_active_ = false;
+  if (polling_thread_.joinable())
+  {
+    polling_thread_.join();
+  }
+
   if (elmo_top_ && !is_fake_hardware_)
   {
     try { elmo_top_->motorOff(); } catch (...) {}
@@ -174,6 +285,7 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_deactivate(
   return CallbackReturn::SUCCESS;
 }
 
+// read() now just reads cached atomics — NO serial latency!
 hardware_interface::return_type ElmoLiftkitHardwareInterface::read(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/)
 {
@@ -181,14 +293,20 @@ hardware_interface::return_type ElmoLiftkitHardwareInterface::read(
   {
     if (!is_fake_hardware_)
     {
-      int32_t top_ticks = elmo_top_->getPosition();
-      int32_t bottom_ticks = elmo_bottom_->getPosition();
-      int32_t top_vel = elmo_top_->getVelocity();
-      int32_t bottom_vel = elmo_bottom_->getVelocity();
+      // Read cached atomic values (no serial latency)
+      int32_t top_ticks = cached_top_ticks_.load();
+      int32_t bottom_ticks = cached_bottom_ticks_.load();
+      int32_t top_vel = cached_top_vel_.load();
+      int32_t bottom_vel = cached_bottom_vel_.load();
 
-      double pos = ((top_ticks + bottom_ticks) / static_cast<double>(max_ticks_total_)) *
+      // Position: scale ticks to height range
+      int32_t total_ticks = top_ticks + bottom_ticks;
+      double pos = (static_cast<double>(total_ticks) / max_ticks_total_) * 
                    (max_height_m_ - min_height_m_) + min_height_m_;
-      double vel = ((top_vel + bottom_vel) / static_cast<double>(max_ticks_total_)) *
+
+      // Velocity: same scaling
+      int32_t total_vel = top_vel + bottom_vel;
+      double vel = (static_cast<double>(total_vel) / max_ticks_total_) * 
                    (max_height_m_ - min_height_m_);
 
       state_position_ = pos;
@@ -196,7 +314,7 @@ hardware_interface::return_type ElmoLiftkitHardwareInterface::read(
     }
     else
     {
-      // Fake hardware: simulate motion toward target
+      // Fake hardware simulation
       double error = command_position_ - state_position_;
       state_position_ = state_position_ + error / 10.0;
       state_velocity_ = error / 10.0;
@@ -217,15 +335,22 @@ hardware_interface::return_type ElmoLiftkitHardwareInterface::write(
   {
     if (!is_fake_hardware_)
     {
-      double target = min(command_position_, height_limit_);
-      double error = target - state_position_;
-      int32_t vel_ticks = static_cast<int32_t>(
-          error * max_ticks_total_ / (max_height_m_ - min_height_m_));
-
-      elmo_top_->setVelocity(vel_ticks);
-      elmo_bottom_->setVelocity(vel_ticks);
+      double target = std::max(min_height_m_, std::min(command_position_, height_limit_));
+      
+      // Convert target height to ticks
+      int32_t target_ticks = static_cast<int32_t>(
+        (target - min_height_m_) / (max_height_m_ - min_height_m_) * max_ticks_total_
+      );
+      
+      // Split evenly between motors
+      int32_t ticks_per_motor = target_ticks / 2;
+      
+      // Use absolute position mode (direct tick control)
+      elmo_top_->setPosition(ticks_per_motor);
+      elmo_bottom_->setPosition(ticks_per_motor);
+      elmo_top_->beginMotion();
+      elmo_bottom_->beginMotion();
     }
-    // Fake hardware: write does nothing, read() simulates motion
   }
   catch (const exception& e)
   {
@@ -234,7 +359,6 @@ hardware_interface::return_type ElmoLiftkitHardwareInterface::write(
 
   return hardware_interface::return_type::OK;
 }
-
 }  // namespace liftkit_hardware_interface
 
 #include "pluginlib/class_list_macros.hpp"

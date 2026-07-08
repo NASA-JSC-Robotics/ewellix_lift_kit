@@ -1,39 +1,50 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
-  <!-- robot name parameter -->
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="ewellix_liftkit">
+  
   <xacro:arg name="name" default="ewellix_liftkit"/>
   <xacro:arg name="tf_prefix" default="" />
-  <xacro:arg name="parent" default="" />
+  <xacro:arg name="parent" default="world" />
   <xacro:arg name="height_limit" default="0.7" />
+  <xacro:arg name="initial_value" default="0.0" />
   <xacro:arg name="calibration_direction" default="none" />
   <xacro:arg name="omit_plates" default="false" />
   <xacro:arg name="use_fake_hardware" default="false" />
-  <xacro:arg name="com_port" default="/dev/ttyUSB0" />
+  <xacro:arg name="com_port_top" default="/dev/ttyACM0" />
+  <xacro:arg name="com_port_bottom" default="/dev/ttyACM1" />
   <xacro:arg name="is_700" default="true" />
   <xacro:arg name="is_500" default="false" />
-  <xacro:arg name="hw_calibration_file" default="$(find ewellix_liftkit_description)/config/default_config.yaml"/>
   <xacro:arg name="use_gazebo" default="false" />
+  <xacro:arg name="max_ticks_mot_1" default="872" />
+  <xacro:arg name="max_ticks_mot_2" default="871" />
+  <xacro:arg name="min_height_m" default="0.048" />
+  <xacro:arg name="max_height_m" default="0.587" />
 
   <link name="world"/>
 
+  <!-- Include macro files -->
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/ewellix_lift.xacro"/>
   <xacro:include filename="$(find ewellix_liftkit_description)/urdf/properties.xacro"/>
 
-  <xacro:property name="hw_calibration_file" value="$(arg hw_calibration_file)"/>
-
+  <!-- Call the ewellix_lift macro -->
   <xacro:ewellix_lift
     name="$(arg name)"
     is_700="$(arg is_700)"
     is_500="$(arg is_500)"
     tf_prefix="$(arg tf_prefix)"
-    parent="world"
+    parent="$(arg parent)"
     height_limit="$(arg height_limit)"
+    initial_value="$(arg initial_value)"
     calibration_direction="$(arg calibration_direction)"
-    omit_plates="false"
+    max_ticks_mot_1="$(arg max_ticks_mot_1)"
+    max_ticks_mot_2="$(arg max_ticks_mot_2)"
+    min_height_m="$(arg min_height_m)"
+    max_height_m="$(arg max_height_m)"
+    omit_plates="$(arg omit_plates)"
     use_fake_hardware="$(arg use_fake_hardware)"
-    com_port="$(arg com_port)"
-    hw_calibration="${xacro.load_yaml(hw_calibration_file)}"
+    com_port_top="$(arg com_port_top)"
+    com_port_bottom="$(arg com_port_bottom)"
     use_gazebo="$(arg use_gazebo)"
+    generate_ros2_control_tag="true"
   >
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </xacro:ewellix_lift>

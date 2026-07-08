@@ -1,119 +1,104 @@
 cmake_minimum_required(VERSION 3.8)
 project(liftkit_hardware_interface)
 
-# Default to C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
-# find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(hardware_interface REQUIRED)
-find_package(controller_manager REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(rcpputils REQUIRED)
-find_package(rcutils REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(std_srvs REQUIRED)
-find_package(control_toolbox REQUIRED)
-find_package(serial REQUIRED)
 
-set(THIS_PACKAGE_INCLUDE_DEPENDS
+# --- ElmoController library ---
+add_library(ElmoController SHARED
+  src/ElmoController.cpp
+)
+target_include_directories(ElmoController PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+# --- Hardware interface plugin ---
+add_library(elmo_liftkit_hardware_interface SHARED
+  src/elmo_liftkit_hardware_interface.cpp
+)
+target_include_directories(elmo_liftkit_hardware_interface PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(elmo_liftkit_hardware_interface
   hardware_interface
-  controller_manager
   pluginlib
   rclcpp
   rclcpp_lifecycle
-  rcpputils
-  rcutils
-  std_msgs
-  std_srvs
-  control_toolbox
-  serial
-  )
-
-add_library(${PROJECT_NAME} SHARED
-  src/liftkit_hardware_interface.cpp
-  src/serial_com_tlt.cpp
+)
+target_link_libraries(elmo_liftkit_hardware_interface
+  ElmoController
 )
 
-target_include_directories(
-  ${PROJECT_NAME}
-  PUBLIC
-  include
+# --- Calibration executable ---
+add_executable(elmo_calibration
+  src/ElmoHoming.cpp
+)
+target_include_directories(elmo_calibration PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(elmo_calibration
+  ElmoController
+  pthread
 )
 
-ament_target_dependencies(
-  ${PROJECT_NAME}
-  hardware_interface
-  controller_manager
-  pluginlib
-  rclcpp
-  rclcpp_lifecycle
-  control_toolbox
-  rcpputils
-  rcutils
-  serial
+# --- Test executable ---
+add_executable(liftkit_test
+  test/main.cpp
+)
+target_include_directories(liftkit_test PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(liftkit_test
+  ElmoController
+  pthread
 )
 
-
-# Causes the visibility macros to use dllexport rather than dllimport,
-# which is appropriate when building the dll but not consuming it.
-target_compile_definitions(${PROJECT_NAME} PRIVATE "JOINT_STATE_BROADCASTER_BUILDING_DLL")
-# prevent pluginlib from using boost
-target_compile_definitions(${PROJECT_NAME} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
-pluginlib_export_plugin_description_file(hardware_interface liftkit_hardware_interface.xml)
-
-
-install(
-  TARGETS ${PROJECT_NAME}
-  DESTINATION lib
+# --- Set RPATH for all executables ---
+set_target_properties(elmo_liftkit_hardware_interface PROPERTIES
+  INSTALL_RPATH "$ORIGIN"
+  BUILD_WITH_INSTALL_RPATH TRUE
+)
+set_target_properties(elmo_calibration PROPERTIES
+  INSTALL_RPATH "$ORIGIN"
+  BUILD_WITH_INSTALL_RPATH TRUE
+)
+set_target_properties(liftkit_test PROPERTIES
+  INSTALL_RPATH "$ORIGIN"
+  BUILD_WITH_INSTALL_RPATH TRUE
 )
 
-install(
-  DIRECTORY include/
-  DESTINATION include
-)
-
-add_executable(controller_stopper_node src/controller_stopper.cpp src/controller_stopper_node.cpp)
-target_include_directories(controller_stopper_node PUBLIC include)
-ament_target_dependencies(controller_stopper_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${THIS_PACKAGE_INCLUDE_DEPENDS})
-
-add_executable(test_liftkit test/test_liftkit_hardware_interface.cpp src/serial_com_tlt.cpp)
-target_include_directories(test_liftkit PUBLIC include)
-ament_target_dependencies(test_liftkit ${${PROJECT_NAME}_EXPORTED_TARGETS} ${THIS_PACKAGE_INCLUDE_DEPENDS})
-
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-endif()
-
-install(
-  TARGETS controller_stopper_node test_liftkit
+# --- Install ALL targets ---
+install(TARGETS
+  ElmoController
+  elmo_liftkit_hardware_interface
+  elmo_calibration
+  liftkit_test
   DESTINATION lib/${PROJECT_NAME}
 )
 
-## EXPORTS
-ament_export_include_directories(
-  include
-)
-ament_export_libraries(
-  ${PROJECT_NAME}
-)
-ament_export_dependencies(
-  hardware_interface
-  controller_manager
-  pluginlib
-  rclcpp
-  rclcpp_lifecycle
-  rcpputils
-  rcutils
-  serial
+install(DIRECTORY include/
+  DESTINATION include
 )
 
+install(FILES
+  elmo_liftkit_hardware_interface.xml
+  DESTINATION share/${PROJECT_NAME}
+)
+
+# --- pluginlib export ---
+pluginlib_export_plugin_description_file(
+  hardware_interface
+  elmo_liftkit_hardware_interface.xml
+)
+
+ament_export_include_directories(include)
+ament_export_libraries(ElmoController elmo_liftkit_hardware_interface)
+ament_export_dependencies(hardware_interface pluginlib rclcpp rclcpp_lifecycle)
 ament_package()

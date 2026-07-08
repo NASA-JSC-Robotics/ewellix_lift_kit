@@ -12,6 +12,7 @@
 
 using namespace std; 
 
+bool ElmoController::calibration_mode = false;
 // ---------------------------------------------------------------------------
 // Helper: map integer baud rate to termios speed_t constant
 // ---------------------------------------------------------------------------
@@ -43,6 +44,7 @@ ElmoController::~ElmoController() {
     }
 }
 
+
 // ---------------------------------------------------------------------------
 // connect()
 // ---------------------------------------------------------------------------
@@ -60,9 +62,6 @@ void ElmoController::connect() {
     fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
 
     setSerialAttributes();
-
-    cout << "✓ Connected to Elmo drive on " << port_name
-              << " at " << baud_rate << " baud" << endl;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,7 +123,6 @@ void ElmoController::disconnect() {
     if (fd >= 0) {
         close(fd);
         fd = -1;
-        cout << "Disconnected from Elmo drive" << endl;
     }
 }
 
@@ -152,8 +150,13 @@ string ElmoController::sendCommandAndRead(const string& cmd,
                                  strerror(errno));
     }
 
-    // Small delay so the drive can prepare its response, 500 Hz
-    this_thread::sleep_for(chrono::milliseconds(2));
+    // Minimal delay so the drive can prepare its response
+    if (calibration_mode) {
+            this_thread::sleep_for(chrono::milliseconds(2));
+        }
+    else {
+        this_thread::sleep_for(chrono::microseconds(100));
+    }
 
     // --- Read loop: discard echo, return the first numeric-looking line ---
     string response;
@@ -240,9 +243,10 @@ string ElmoController::sendCommandAndRead(const string& cmd,
 // ---------------------------------------------------------------------------
 void ElmoController::motorOn() {
     try {
-        cout << "Sending: Motor On (MO=1)" << endl;
         sendCommandAndRead("MO=1");
-        wait(300);
+        if (calibration_mode) {
+            wait(300);
+        }
     } catch (const exception& e) {
         cerr << "Error in motorOn: " << e.what() << endl;
         throw;
@@ -251,9 +255,10 @@ void ElmoController::motorOn() {
 
 void ElmoController::motorOff() {
     try {
-        cout << "Sending: Motor Off (MO=0)" << endl;
         sendCommandAndRead("MO=0");
-        wait(100);
+        if (calibration_mode) {
+            wait(100);
+        }
     } catch (const exception& e) {
         cerr << "Error in motorOff: " << e.what() << endl;
         throw;
@@ -261,7 +266,6 @@ void ElmoController::motorOff() {
 }
 
 void ElmoController::waitForMotionComplete(int timeout_ms) {
-    cout << "Waiting for motion to complete..." << endl;
     auto start = chrono::steady_clock::now();
 
     while (chrono::duration_cast<chrono::milliseconds>(
@@ -271,19 +275,13 @@ void ElmoController::waitForMotionComplete(int timeout_ms) {
         if (!response.empty()) {
             try {
                 int status = stoi(response);
-                if (status == 0) {
-                    cout << "Motion complete (MS=0)." << endl;
-                    return;
-                } else if (status == 3) {
-                    cout << "Warning: motor disabled (MS=3)." << endl;
+                if (status == 0 || status == 3) {
                     return;
                 }
-                cout << "MS=" << status << endl;
             } catch (...) {}
         }
         this_thread::sleep_for(chrono::milliseconds(100));
     }
-    cout << "Warning: motion timeout - check if limit switch was hit!" << endl;
 }
 
 // ---------------------------------------------------------------------------
@@ -291,9 +289,10 @@ void ElmoController::waitForMotionComplete(int timeout_ms) {
 // ---------------------------------------------------------------------------
 void ElmoController::setVelocityMode() {
     try {
-        cout << "Sending: Set Velocity Mode (UM=2)" << endl;
         sendCommandAndRead("UM=2");
-        wait(50);
+        if (calibration_mode) {
+            wait(50);
+        }
     } catch (const exception& e) {
         cerr << "Error in setVelocityMode: " << e.what() << endl;
         throw;
@@ -302,9 +301,10 @@ void ElmoController::setVelocityMode() {
 
 void ElmoController::setPositionMode() {
     try {
-        cout << "Sending: Set Position Mode (UM=5)" << endl;
         sendCommandAndRead("UM=5");
-        wait(50);
+        if (calibration_mode) {
+            wait(50);
+        }
     } catch (const exception& e) {
         cerr << "Error in setPositionMode: " << e.what() << endl;
         throw;
@@ -313,9 +313,10 @@ void ElmoController::setPositionMode() {
 
 void ElmoController::setCurrentMode() {
     try {
-        cout << "Sending: Set Current/Torque Mode (UM=1)" << endl;
         sendCommandAndRead("UM=1");
-        wait(50);
+        if (calibration_mode) {
+            wait(50);
+        }
     } catch (const exception& e) {
         cerr << "Error in setCurrentMode: " << e.what() << endl;
         throw;
@@ -328,10 +329,13 @@ void ElmoController::setCurrentMode() {
 void ElmoController::setVelocity(int32_t velocity) {
     try {
         string cmd = "JV=" + to_string(velocity);
-        cout << "Sending: " << cmd << endl;
         sendCommandAndRead(cmd);
-        wait(50);
-        beginMotion(); 
+        
+        if (calibration_mode) {
+            this_thread::sleep_for(chrono::milliseconds(50));
+        }
+        
+        beginMotion();
     } catch (const exception& e) {
         cerr << "Error in setVelocity: " << e.what() << endl;
         throw;
@@ -341,12 +345,14 @@ void ElmoController::setVelocity(int32_t velocity) {
 void ElmoController::setCurrent(float current) {
     try {
         string cmd = "TC=" + to_string(current);
-        cout << "Sending: " << cmd << endl;
         sendCommandAndRead(cmd);
-        wait(50);
-        beginMotion(); 
+        beginMotion();
+        // Add delay only during calibration
+        if (calibration_mode) {
+            wait(50);
+        }
     } catch (const exception& e) {
-        cerr << "Error in setVelocity: " << e.what() << endl;
+        cerr << "Error in setCurrent: " << e.what() << endl;
         throw;
     }
 }
@@ -354,9 +360,10 @@ void ElmoController::setCurrent(float current) {
 void ElmoController::setPosition(int32_t position) {
     try {
         string cmd = "PA=" + to_string(position);
-        cout << "Sending: " << cmd << endl;
         sendCommandAndRead(cmd);
-        wait(50);
+        if (calibration_mode) {
+            wait(50);
+        }
     } catch (const exception& e) {
         cerr << "Error in setPosition: " << e.what() << endl;
         throw;
@@ -366,9 +373,10 @@ void ElmoController::setPosition(int32_t position) {
 void ElmoController::setPositionRelative(int32_t delta) {
     try {
         string cmd = "PR=" + to_string(delta);
-        cout << "Sending: " << cmd << endl;
         sendCommandAndRead(cmd);
-        wait(50);
+        if (calibration_mode) {
+            wait(50);
+        }
     } catch (const exception& e) {
         cerr << "Error in setPositionRelative: " << e.what() << endl;
         throw;
@@ -377,9 +385,10 @@ void ElmoController::setPositionRelative(int32_t delta) {
 
 void ElmoController::beginMotion() {
     try {
-        cout << "Sending: Begin Motion (BG)" << endl;
         sendCommandAndRead("BG");
-        wait(50);
+        if (calibration_mode) {
+            this_thread::sleep_for(chrono::milliseconds(50));
+        }
     } catch (const exception& e) {
         cerr << "Error in beginMotion: " << e.what() << endl;
         throw;
@@ -388,9 +397,10 @@ void ElmoController::beginMotion() {
 
 void ElmoController::stopMotion() {
     try {
-        cout << "Sending: Stop Motion (ST)" << endl;
         sendCommandAndRead("ST");
-        wait(50);
+        if (calibration_mode) {
+            wait(50);
+        }
     } catch (const exception& e) {
         cerr << "Error in stopMotion: " << e.what() << endl;
         throw;
@@ -399,71 +409,48 @@ void ElmoController::stopMotion() {
 
 void ElmoController::velocityForTime(int32_t velocity, int duration_ms, int poll_ms) {
     try {
-        cout << "Jogging at " << velocity
-             << " counts/sec for " << duration_ms << "ms" << endl;
-
         setVelocity(velocity);
 
         auto start = chrono::steady_clock::now();
         while (chrono::duration_cast<chrono::milliseconds>(
                    chrono::steady_clock::now() - start).count() < duration_ms) {
-
-            cout << "  POS= " << getPosition() << endl;
-            cout << "  VEL= " << getVelocity() << endl;
-            cout << "  CUR= " << getCurrent() << endl;
             wait(poll_ms);
         }
 
         stopMotion();
-        wait(200);
-
-        cout << "Jog complete. Final position: "
-             << getPosition() << " counts" << endl;
 
     } catch (const exception& e) {
-        cerr << "Error in jogForTime: " << e.what() << endl;
+        cerr << "Error in velocityForTime: " << e.what() << endl;
         stopMotion();
         throw;
     }
 }
 
 void ElmoController::currentForTime(float current, int duration_ms, int poll_ms) {
-        try {
-        cout << "Jogging at " << current
-             << " A for " << duration_ms << "ms" << endl;
-
+    try {
         setCurrent(current);
 
         auto start = chrono::steady_clock::now();
         while (chrono::duration_cast<chrono::milliseconds>(
                    chrono::steady_clock::now() - start).count() < duration_ms) {
-
-            cout << "  POS= " << getPosition() << endl;
-            cout << "  VEL= " << getVelocity() << endl;
-            cout << "  CUR= " << getCurrent() << endl;
             wait(poll_ms);
         }
 
         stopMotion();
-        wait(200);
-
-        cout << "Jog complete. Final position: "
-             << getPosition() << " counts" << endl;
 
     } catch (const exception& e) {
-        cerr << "Error in jogForTime: " << e.what() << endl;
+        cerr << "Error in currentForTime: " << e.what() << endl;
         stopMotion();
         throw;
     }
 }
+
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
 int32_t ElmoController::getPosition() {
     try {
-        // cout << "Requesting: Position (PX)" << endl;
         string response = sendCommandAndRead("PX");
-        // cout << "Raw response: [" << response << "]" << endl;
         return stoi(response);
     } catch (const exception& e) {
         cerr << "Error in getPosition: " << e.what() << endl;
@@ -473,7 +460,6 @@ int32_t ElmoController::getPosition() {
 
 int32_t ElmoController::getVelocity() {
     try {
-        // cout << "Requesting: Velocity (VX)" << endl;
         string response = sendCommandAndRead("VX");
         return stoi(response);
     } catch (const exception& e) {
@@ -484,7 +470,6 @@ int32_t ElmoController::getVelocity() {
 
 float ElmoController::getCurrent() {
     try {
-        // cout << "Requesting: Active Current (IQ)" << endl;
         string response = sendCommandAndRead("IQ");
         return stof(response);
     } catch (const exception& e) {
@@ -495,7 +480,6 @@ float ElmoController::getCurrent() {
 
 int32_t ElmoController::getStatus() {
     try {
-        // cout << "Requesting: Status Register (SR)" << endl;
         string response = sendCommandAndRead("SR");
         return stoi(response);
     } catch (const exception& e) {
@@ -506,7 +490,7 @@ int32_t ElmoController::getStatus() {
 
 float ElmoController::getElmoTemperature() {
     try {
-        string response = sendCommandAndRead("TI[1]"); // Temp in C
+        string response = sendCommandAndRead("TI[1]");
         return stof(response);
     } catch (const exception& e) {
         cerr << "Error in getElmoTemperature: " << e.what() << endl;
@@ -530,7 +514,6 @@ void ElmoController::sendRawCommand(const string& cmd) {
         throw runtime_error(string("write() failed: ") +
                                  strerror(errno));
     }
-    cout << "Sent raw command: " << cmd << endl;
 }
 
 string ElmoController::readRawResponse() {
@@ -549,5 +532,77 @@ string ElmoController::getSerialNumber() {
     } catch (const exception& e) {
         cerr << "Error in getSerialNumber: " << e.what() << endl;
         return "";
+    }
+}
+
+void ElmoController::zeroPosition() {
+    try {
+        sendCommandAndRead("PX=0");
+        wait(2);
+    } catch (const exception& e) {
+        cerr << "Error in zeroPosition: " << e.what() << endl;
+        throw;
+    }
+}
+
+bool ElmoController::homeToHardStop(float current, int direction,
+                                     int32_t stall_velocity_threshold,
+                                     int stall_time_ms,
+                                     int timeout_ms,
+                                     int poll_ms,
+                                     int32_t backoff_counts) {
+    try {
+        setCurrentMode();
+        motorOn();
+
+        float signed_current = (direction >= 0) ? current : -current;
+
+        setCurrent(signed_current);
+
+        auto start = chrono::steady_clock::now();
+        auto stall_start = start;
+        bool stalling = false;
+
+        while (chrono::duration_cast<chrono::milliseconds>(
+                   chrono::steady_clock::now() - start).count() < timeout_ms) {
+
+            int32_t vel = getVelocity();
+
+            if (abs(vel) < stall_velocity_threshold) {
+                if (!stalling) {
+                    stalling = true;
+                    stall_start = chrono::steady_clock::now();
+                }
+                int stalled_for = (int)chrono::duration_cast<chrono::milliseconds>(
+                    chrono::steady_clock::now() - stall_start).count();
+
+                if (stalled_for >= stall_time_ms) {
+                    stopMotion();
+                    zeroPosition();
+
+                    if (backoff_counts != 0) {
+                        setPositionMode();
+                        motorOn();
+                        setPositionRelative(-direction * abs(backoff_counts));
+                        beginMotion();
+                        waitForMotionComplete();
+                    }
+
+                    return true;
+                }
+            } else {
+                stalling = false;
+            }
+
+            wait(poll_ms);
+        }
+
+        stopMotion();
+        return false;
+
+    } catch (const exception& e) {
+        cerr << "Error in homeToHardStop: " << e.what() << endl;
+        stopMotion();
+        throw;
     }
 }

@@ -26,13 +26,13 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterFile
+from launch_ros.parameter_descriptions import ParameterFile, ParameterValue  # ← added ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
     declared_arguments = []
-    # xacro args
+
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_name",
@@ -58,12 +58,18 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "com_port",
-            default_value="/dev/ttyUSB0",
-            description="com port for the ewellix",
+            "com_port_top",
+            default_value="/dev/ttyACM0",
+            description="Serial port for top Elmo motor",
         )
     )
-
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "com_port_bottom",
+            default_value="/dev/ttyACM1",
+            description="Serial port for bottom Elmo motor",
+        )
+    )
     declared_arguments.append(
         DeclareLaunchArgument(
             "height_limit",
@@ -75,7 +81,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "is_700",
             default_value="true",
-            description="Set to true to use the 500mm stroke liftkit configuration.",
+            description="Set to true to use the 700mm stroke liftkit configuration.",
         )
     )
     declared_arguments.append(
@@ -85,7 +91,6 @@ def generate_launch_description():
             description="Set to true to use the 500mm stroke liftkit configuration.",
         )
     )
-    # other args
     declared_arguments.append(
         DeclareLaunchArgument(
             "rviz",
@@ -93,14 +98,16 @@ def generate_launch_description():
             description="launch rviz",
         )
     )
-    robot_name = LaunchConfiguration("robot_name")
-    tf_prefix = LaunchConfiguration("tf_prefix")
+
+    robot_name      = LaunchConfiguration("robot_name")
+    tf_prefix       = LaunchConfiguration("tf_prefix")
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    rviz = LaunchConfiguration("rviz")
-    com_port = LaunchConfiguration("com_port")
-    height_limit = LaunchConfiguration("height_limit")
-    is_500 = LaunchConfiguration("is_500")
-    is_700 = LaunchConfiguration("is_700")
+    rviz            = LaunchConfiguration("rviz")
+    com_port_top    = LaunchConfiguration("com_port_top")
+    com_port_bottom = LaunchConfiguration("com_port_bottom")
+    height_limit    = LaunchConfiguration("height_limit")
+    is_500          = LaunchConfiguration("is_500")
+    is_700          = LaunchConfiguration("is_700")
 
     robot_description_content = Command(
         [
@@ -108,35 +115,34 @@ def generate_launch_description():
             " ",
             PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift.urdf.xacro"]),
             " ",
-            "name:=",
-            robot_name,
+            "name:=",            robot_name,
             " ",
-            "tf_prefix:=",
-            tf_prefix,
+            "tf_prefix:=",       tf_prefix,
             " ",
-            "use_fake_hardware:=",
-            use_fake_hardware,
+            "use_fake_hardware:=", use_fake_hardware,
             " ",
-            "com_port:=",
-            com_port,
+            "com_port_top:=",    com_port_top,
             " ",
-            "height_limit:=",
-            height_limit,
+            "com_port_bottom:=", com_port_bottom,
             " ",
-            "is_500:=",
-            is_500,
+            "height_limit:=",    height_limit,
             " ",
-            "is_700:=",
-            is_700,
+            "is_500:=",          is_500,
+            " ",
+            "is_700:=",          is_700,
             " ",
         ]
     )
-    robot_description = {"robot_description": robot_description_content}
+
+    # ← wrapped in ParameterValue to avoid yaml parse error
+    robot_description = {
+        "robot_description": ParameterValue(robot_description_content, value_type=str)
+    }
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
-        output="screen",
+        output="log",
         parameters=[robot_description],
     )
 
@@ -156,21 +162,20 @@ def generate_launch_description():
         parameters=[
             robot_description,
             controller_common_params,
-            controller_liftkit_params,
         ],
     )
 
-    joint_state_broadcaster_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[
-            "joint_state_broadcaster",
-            "-c",
-            "controller_manager",
-            "--controller-manager-timeout",
-            "100",
-        ],
-    )
+    #joint_state_broadcaster_spawner = Node(
+    #    package="controller_manager",
+    #    executable="spawner",
+     #   arguments=[
+     #       "joint_state_broadcaster",
+     #       "-c",
+     #       "controller_manager",
+     #       "--controller-manager-timeout",
+     #       "100",
+     #   ],
+    #)
 
     rviz_config_file = PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "rviz", "view_robot.rviz"])
 
@@ -183,11 +188,11 @@ def generate_launch_description():
         condition=IfCondition(rviz),
     )
 
-    nodes = [robot_state_publisher, controller_manager, joint_state_broadcaster_spawner, rviz_node]
+    nodes = [robot_state_publisher, controller_manager, rviz_node]
 
     spawn_controllers_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory("ewellix_liftkit_deploy"), "launch", "spawn_controllers.launch.py")
+          os.path.join(get_package_share_directory("ewellix_liftkit_deploy"), "launch", "spawn_controllers.launch.py")
         ),
         launch_arguments={
             "use_fake_hardware": use_fake_hardware,

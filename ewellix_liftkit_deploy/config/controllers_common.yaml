@@ -1,6 +1,17 @@
 controller_manager:
   ros__parameters:
-    update_rate: 500  # Hz
+    update_rate: 45
+    use_sim_time: false
+    lock_memory: false
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
+
+    lift_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+lift_position_controller:
+  ros__parameters:
+    joints:
+      - ewellix_lift_lower_to_higher
+    interface_name: position

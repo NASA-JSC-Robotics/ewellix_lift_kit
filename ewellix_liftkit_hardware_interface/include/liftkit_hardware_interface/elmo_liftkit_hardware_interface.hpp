@@ -52,6 +52,19 @@ public:
   hardware_interface::return_type write(const rclcpp::Time& time, const rclcpp::Duration& period) override;
 
 private:
+
+  // Polling thread for async reads
+  std::thread polling_thread_;
+  std::atomic<bool> polling_active_{false};
+  
+  // Cached state from background polling
+  std::atomic<int32_t> cached_top_ticks_{0};
+  std::atomic<int32_t> cached_bottom_ticks_{0};
+  std::atomic<int32_t> cached_top_vel_{0};
+  std::atomic<int32_t> cached_bottom_vel_{0};
+
+  // Thread function
+  void pollingThreadLoop();
   // Single joint - plain doubles (ros2_control needs double* pointers)
   std::string joint_name_;
   double state_position_;
