@@ -1,6 +1,6 @@
-min_ticks_mot_1: 0
-max_ticks_mot_1: 0
-min_ticks_mot_2: 871
-max_ticks_mot_2: 872
-min_height_m: 0
-max_height_m: 0.587
+min_ticks_mot_1: ${ewellix_liftkit.min_ticks_mot_1}
+max_ticks_mot_1: ${ewellix_liftkit.max_ticks_mot_1}
+min_ticks_mot_2: ${ewellix_liftkit.min_ticks_mot_2}
+max_ticks_mot_2: ${ewellix_liftkit.max_ticks_mot_2}
+min_height_m: ${ewellix_liftkit.min_height_m}
+max_height_m: ${ewellix_liftkit.max_height_m}

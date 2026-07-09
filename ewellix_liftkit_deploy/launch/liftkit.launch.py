@@ -18,6 +18,7 @@
 # under the License.
 
 import os
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
@@ -26,11 +27,25 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterFile, ParameterValue  # ← added ParameterValue
+from launch_ros.parameter_descriptions import ParameterFile, ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
+def load_parameters():
+    """Load parameters from central YAML file"""
+    pkg_path = get_package_share_directory("ewellix_liftkit_deploy")
+    yaml_path = os.path.join(pkg_path, "config", "ewellix_liftkit_parameters.yaml")
+    
+    with open(yaml_path, 'r') as f:
+        params = yaml.safe_load(f)
+    
+    return params['ewellix_liftkit']
+
+
 def generate_launch_description():
+    # Load parameters from central YAML file
+    params = load_parameters()
+    
     declared_arguments = []
 
     declared_arguments.append(
@@ -44,51 +59,147 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "tf_prefix",
             default_value="",
-            description="Prefix of the joint names, useful for \
-        multi-robot setup. If changed than also joint names in the controllers' configuration \
-        have to be updated.",
+            description="Prefix of the joint names, useful for multi-robot setup.",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "use_fake_hardware",
-            default_value="false",
+            default_value=str(params['use_fake_hardware']).lower(),
             description="Start robot with fake hardware mirroring command to its states.",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "com_port_top",
-            default_value="/dev/ttyACM0",
+            default_value=params['com_port_top'],
             description="Serial port for top Elmo motor",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "com_port_bottom",
-            default_value="/dev/ttyACM1",
+            default_value=params['com_port_bottom'],
             description="Serial port for bottom Elmo motor",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "height_limit",
-            default_value="0.7",
+            default_value=str(params['height_limit']),
             description="Maximum height in meters for the lift",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "is_700",
-            default_value="true",
+            default_value=str(params['is_700']).lower(),
             description="Set to true to use the 700mm stroke liftkit configuration.",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "is_500",
-            default_value="false",
+            default_value=str(params['is_500']).lower(),
             description="Set to true to use the 500mm stroke liftkit configuration.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "max_ticks_mot_1",
+            default_value=str(params['max_ticks_mot_1']),
+            description="Max ticks for motor 1",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "max_ticks_mot_2",
+            default_value=str(params['max_ticks_mot_2']),
+            description="Max ticks for motor 2",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "min_height_m",
+            default_value=str(params['min_height_m']),
+            description="Minimum height in meters",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "max_height_m",
+            default_value=str(params['max_height_m']),
+            description="Maximum height in meters",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "homing_current_a",
+            default_value=str(params['homing_current_a']),
+            description="Homing current in amps",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "stall_velocity_thresh",
+            default_value=str(params['stall_velocity_thresh']),
+            description="Stall velocity threshold",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "stall_time_ms",
+            default_value=str(params['stall_time_ms']),
+            description="Stall time in milliseconds",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "homing_timeout_ms",
+            default_value=str(params['homing_timeout_ms']),
+            description="Homing timeout in milliseconds",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "poll_ms",
+            default_value=str(params['poll_ms']),
+            description="Poll time in milliseconds",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "backoff_counts",
+            default_value=str(params['backoff_counts']),
+            description="Backoff counts",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "top_home_direction",
+            default_value=str(params['top_home_direction']),
+            description="Top home direction",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "bottom_home_direction",
+            default_value=str(params['bottom_home_direction']),
+            description="Bottom home direction",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "calibration_direction",
+            default_value=params['calibration_direction'],
+            description="Calibration direction",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "initial_value",
+            default_value=str(params['initial_value']),
+            description="Initial value",
         )
     )
     declared_arguments.append(
@@ -99,15 +210,29 @@ def generate_launch_description():
         )
     )
 
-    robot_name      = LaunchConfiguration("robot_name")
-    tf_prefix       = LaunchConfiguration("tf_prefix")
-    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
-    rviz            = LaunchConfiguration("rviz")
-    com_port_top    = LaunchConfiguration("com_port_top")
-    com_port_bottom = LaunchConfiguration("com_port_bottom")
-    height_limit    = LaunchConfiguration("height_limit")
-    is_500          = LaunchConfiguration("is_500")
-    is_700          = LaunchConfiguration("is_700")
+    robot_name              = LaunchConfiguration("robot_name")
+    tf_prefix               = LaunchConfiguration("tf_prefix")
+    use_fake_hardware       = LaunchConfiguration("use_fake_hardware")
+    rviz                    = LaunchConfiguration("rviz")
+    com_port_top            = LaunchConfiguration("com_port_top")
+    com_port_bottom         = LaunchConfiguration("com_port_bottom")
+    height_limit            = LaunchConfiguration("height_limit")
+    is_500                  = LaunchConfiguration("is_500")
+    is_700                  = LaunchConfiguration("is_700")
+    max_ticks_mot_1         = LaunchConfiguration("max_ticks_mot_1")
+    max_ticks_mot_2         = LaunchConfiguration("max_ticks_mot_2")
+    min_height_m            = LaunchConfiguration("min_height_m")
+    max_height_m            = LaunchConfiguration("max_height_m")
+    homing_current_a        = LaunchConfiguration("homing_current_a")
+    stall_velocity_thresh   = LaunchConfiguration("stall_velocity_thresh")
+    stall_time_ms           = LaunchConfiguration("stall_time_ms")
+    homing_timeout_ms       = LaunchConfiguration("homing_timeout_ms")
+    poll_ms                 = LaunchConfiguration("poll_ms")
+    backoff_counts          = LaunchConfiguration("backoff_counts")
+    top_home_direction      = LaunchConfiguration("top_home_direction")
+    bottom_home_direction   = LaunchConfiguration("bottom_home_direction")
+    calibration_direction   = LaunchConfiguration("calibration_direction")
+    initial_value           = LaunchConfiguration("initial_value")
 
     robot_description_content = Command(
         [
@@ -115,26 +240,52 @@ def generate_launch_description():
             " ",
             PathJoinSubstitution([FindPackageShare("ewellix_liftkit_description"), "urdf", "ewellix_lift.urdf.xacro"]),
             " ",
-            "name:=",            robot_name,
+            "name:=",                 robot_name,
             " ",
-            "tf_prefix:=",       tf_prefix,
+            "tf_prefix:=",            tf_prefix,
             " ",
-            "use_fake_hardware:=", use_fake_hardware,
+            "use_fake_hardware:=",    use_fake_hardware,
             " ",
-            "com_port_top:=",    com_port_top,
+            "com_port_top:=",         com_port_top,
             " ",
-            "com_port_bottom:=", com_port_bottom,
+            "com_port_bottom:=",      com_port_bottom,
             " ",
-            "height_limit:=",    height_limit,
+            "height_limit:=",         height_limit,
             " ",
-            "is_500:=",          is_500,
+            "is_500:=",               is_500,
             " ",
-            "is_700:=",          is_700,
+            "is_700:=",               is_700,
             " ",
+            "max_ticks_mot_1:=",      max_ticks_mot_1,
+            " ",
+            "max_ticks_mot_2:=",      max_ticks_mot_2,
+            " ",
+            "min_height_m:=",         min_height_m,
+            " ",
+            "max_height_m:=",         max_height_m,
+            " ",
+            "homing_current_a:=",     homing_current_a,
+            " ",
+            "stall_velocity_thresh:=", stall_velocity_thresh,
+            " ",
+            "stall_time_ms:=",        stall_time_ms,
+            " ",
+            "homing_timeout_ms:=",    homing_timeout_ms,
+            " ",
+            "poll_ms:=",              poll_ms,
+            " ",
+            "backoff_counts:=",       backoff_counts,
+            " ",
+            "top_home_direction:=",   top_home_direction,
+            " ",
+            "bottom_home_direction:=", bottom_home_direction,
+            " ",
+            "calibration_direction:=", calibration_direction,
+            " ",
+            "initial_value:=",        initial_value,
         ]
     )
 
-    # ← wrapped in ParameterValue to avoid yaml parse error
     robot_description = {
         "robot_description": ParameterValue(robot_description_content, value_type=str)
     }
@@ -151,11 +302,6 @@ def generate_launch_description():
         allow_substs=True,
     )
 
-    controller_liftkit_params = ParameterFile(
-        PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "config", "liftkit_controllers.yaml"]),
-        allow_substs=True,
-    )
-
     controller_manager = Node(
         package="controller_manager",
         executable="ros2_control_node",
@@ -164,18 +310,6 @@ def generate_launch_description():
             controller_common_params,
         ],
     )
-
-    #joint_state_broadcaster_spawner = Node(
-    #    package="controller_manager",
-    #    executable="spawner",
-     #   arguments=[
-     #       "joint_state_broadcaster",
-     #       "-c",
-     #       "controller_manager",
-     #       "--controller-manager-timeout",
-     #       "100",
-     #   ],
-    #)
 
     rviz_config_file = PathJoinSubstitution([FindPackageShare("ewellix_liftkit_deploy"), "rviz", "view_robot.rviz"])
 

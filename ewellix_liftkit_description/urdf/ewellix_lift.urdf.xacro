@@ -1,24 +1,14 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="ewellix_liftkit">
   
+  <!-- Include central parameters -->
+  <xacro:include filename="$(find ewellix_liftkit_description)/urdf/parameters.xacro"/>
+  
+  <!-- Standard arguments (these are already in parameters.xacro, but repeated here for clarity) -->
   <xacro:arg name="name" default="ewellix_liftkit"/>
   <xacro:arg name="tf_prefix" default="" />
   <xacro:arg name="parent" default="world" />
-  <xacro:arg name="height_limit" default="0.7" />
-  <xacro:arg name="initial_value" default="0.0" />
-  <xacro:arg name="calibration_direction" default="none" />
-  <xacro:arg name="omit_plates" default="false" />
-  <xacro:arg name="use_fake_hardware" default="false" />
-  <xacro:arg name="com_port_top" default="/dev/ttyACM0" />
-  <xacro:arg name="com_port_bottom" default="/dev/ttyACM1" />
-  <xacro:arg name="is_700" default="true" />
-  <xacro:arg name="is_500" default="false" />
-  <xacro:arg name="use_gazebo" default="false" />
-  <xacro:arg name="max_ticks_mot_1" default="872" />
-  <xacro:arg name="max_ticks_mot_2" default="871" />
-  <xacro:arg name="min_height_m" default="0.048" />
-  <xacro:arg name="max_height_m" default="0.587" />
-
+  
   <link name="world"/>
 
   <!-- Include macro files -->

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!-- 
+    This file serves as a bridge between the YAML parameters and xacro.
+    The values are passed from the launch file via xacro arguments.
+  -->
+  
+  <!-- Standard arguments -->
+  <xacro:arg name="name" default="ewellix_liftkit" />
+  <xacro:arg name="tf_prefix" default="" />
+  <xacro:arg name="parent" default="world" />
+  
+  <!-- Motor parameters -->
+  <xacro:arg name="max_ticks_mot_1" default="871" />
+  <xacro:arg name="max_ticks_mot_2" default="870" />
+  <xacro:arg name="min_ticks_mot_1" default="0" />
+  <xacro:arg name="min_ticks_mot_2" default="0" />
+  
+  <!-- Height parameters -->
+  <xacro:arg name="min_height_m" default="0.048" />
+  <xacro:arg name="max_height_m" default="0.587" />
+  <xacro:arg name="height_limit" default="0.6" />
+  
+  <!-- Hardware parameters -->
+  <xacro:arg name="use_fake_hardware" default="false" />
+  <xacro:arg name="com_port_top" default="/dev/ttyACM0" />
+  <xacro:arg name="com_port_bottom" default="/dev/ttyACM1" />
+  
+  <!-- Configuration -->
+  <xacro:arg name="is_700" default="true" />
+  <xacro:arg name="is_500" default="false" />
+  <xacro:arg name="omit_plates" default="false" />
+  <xacro:arg name="use_gazebo" default="false" />
+  
+  <!-- Control parameters -->
+  <xacro:arg name="homing_current_a" default="0.5" />
+  <xacro:arg name="stall_velocity_thresh" default="5" />
+  <xacro:arg name="stall_time_ms" default="400" />
+  <xacro:arg name="homing_timeout_ms" default="15000" />
+  <xacro:arg name="poll_ms" default="20" />
+  <xacro:arg name="backoff_counts" default="500" />
+  <xacro:arg name="top_home_direction" default="1" />
+  <xacro:arg name="bottom_home_direction" default="1" />
+  <xacro:arg name="calibration_direction" default="none" />
+  <xacro:arg name="initial_value" default="0.0" />
+</robot>

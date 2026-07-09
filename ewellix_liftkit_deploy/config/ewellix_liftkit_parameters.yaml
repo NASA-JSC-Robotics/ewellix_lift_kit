@@ -1,0 +1,34 @@
+ewellix_liftkit:
+  # Motor parameters
+  max_ticks_mot_1: 871
+  max_ticks_mot_2: 870
+  min_ticks_mot_1: 0
+  min_ticks_mot_2: 0
+  
+  # Height parameters
+  min_height_m: 0.048000
+  max_height_m: 0.587000
+  height_limit: 0.6
+  
+  # Hardware parameters
+  use_fake_hardware: false
+  com_port_top: /dev/ttyACM0
+  com_port_bottom: /dev/ttyACM1
+  
+  # Configuration
+  is_700: true
+  is_500: false
+  omit_plates: false
+  use_gazebo: false
+  
+  # Control parameters
+  homing_current_a: 0.5
+  stall_velocity_thresh: 5
+  stall_time_ms: 400
+  homing_timeout_ms: 15000
+  poll_ms: 20
+  backoff_counts: 500
+  top_home_direction: 1
+  bottom_home_direction: 1
+  calibration_direction: none
+  initial_value: 0.0

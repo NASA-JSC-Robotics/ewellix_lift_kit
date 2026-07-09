@@ -1,3 +1,21 @@
+/* Copyright (c) 2025, United States Government, as represented by the
+ * Administrator of the National Aeronautics and Space Administration.
+ *
+ * All rights reserved.
+ *
+ * This software is licensed under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
 #include "liftkit_hardware_interface/ElmoController.h"
 
 #include <iostream>
@@ -13,44 +31,38 @@
 using namespace std; 
 
 bool ElmoController::calibration_mode = false;
-// ---------------------------------------------------------------------------
-// Helper: map integer baud rate to termios speed_t constant
-// ---------------------------------------------------------------------------
-static speed_t baudRateToSpeed(uint32_t baud) {
-    switch (baud) {
-        case 9600:   return B9600;
-        case 19200:  return B19200;
-        case 38400:  return B38400;
-        case 57600:  return B57600;
-        case 115200: return B115200;
-        case 230400: return B230400;
-        case 460800: return B460800;
-        case 921600: return B921600;
-        default:
-            throw runtime_error("Unsupported baud rate: " +
-                                     to_string(baud));
-    }
-}
+uint32_t baud = B115200; // Highest supported baud rate via USB for Elmo controllers.
 
-// ---------------------------------------------------------------------------
-// Constructor / Destructor
-// ---------------------------------------------------------------------------
+/**
+ * Constructor for ElmoController object, sets up serial connection on startup.
+ */
 ElmoController::ElmoController(const string& port, uint32_t baud)
     : port_name(port), baud_rate(baud), fd(-1) {}
 
+/**
+ * Destructor for ElmoController object, disconnects and closes serial port to Elmo controllers.
+ */
 ElmoController::~ElmoController() {
     if (isConnected()) {
-        try { disconnect(); } catch (...) {}
+        try { 
+            disconnect(); 
+        } 
+        
+        catch (...) {}
     }
 }
 
 
-// ---------------------------------------------------------------------------
-// connect()
-// ---------------------------------------------------------------------------
+/**
+ * Connects to Elmo controller with serial flags:
+ * 
+ * O_RDWR = Open for read and write.
+ * O_NOCTTY = Opens serial device but as non-controlling terminal.
+ * O_NDELAY = Non-blocking wait for initial serial connection.
+ * F_GETFL = Current flags for file descriptor.
+ * ~O_NONBLOCK = Disables non-blocking mode and enables blocking.
+ */
 void ElmoController::connect() {
-    // O_NOCTTY  : don't make this the controlling terminal
-    // O_NDELAY  : non-blocking open (we set blocking later via termios)
     fd = open(port_name.c_str(), O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd < 0) {
         throw runtime_error("Failed to open serial port '" +
@@ -61,12 +73,14 @@ void ElmoController::connect() {
     int flags = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
 
+    // Specific attributes needed for Elmo motor control commands.
     setSerialAttributes();
 }
 
-// ---------------------------------------------------------------------------
-// setSerialAttributes()  – configure termios (8N1, raw mode)
-// ---------------------------------------------------------------------------
+/**
+ * Specific attributes needed for Elmo motor controller commands.
+ * Goal is to not modify the Elmo command packet due to serial attributes.
+ */
 void ElmoController::setSerialAttributes() {
     struct termios tty;
     memset(&tty, 0, sizeof tty);
@@ -78,34 +92,36 @@ void ElmoController::setSerialAttributes() {
                                  strerror(errno));
     }
 
-    speed_t spd = baudRateToSpeed(baud_rate);
-    cfsetispeed(&tty, spd);
-    cfsetospeed(&tty, spd);
+    cfsetispeed(&tty, baud);
+    cfsetospeed(&tty, baud);
 
-    // --- Control flags ---
-    tty.c_cflag &= ~PARENB;          // No parity
-    tty.c_cflag &= ~CSTOPB;          // 1 stop bit
-    tty.c_cflag &= ~CSIZE;
-    tty.c_cflag |=  CS8;             // 8 data bits
-    tty.c_cflag &= ~CRTSCTS;         // No hardware flow control
-    tty.c_cflag |=  CREAD | CLOCAL;  // Enable receiver, ignore modem lines
+    // Configure the serial port to match the Elmo controller's communication settings: 
+    // 8N1, no hardware flow control, receiver enabled.
+    tty.c_cflag &= ~PARENB; 
+    tty.c_cflag &= ~CSTOPB; 
+    tty.c_cflag &= ~CSIZE;            
+    tty.c_cflag |=  CS8; 
+    tty.c_cflag &= ~CRTSCTS; 
+    tty.c_cflag |=  CREAD | CLOCAL; 
 
-    // --- Local flags: raw mode ---
+    // Local flags
+    // Raw mode: disable terminal processing so bytes are transmitted and received exactly as sent. 
     tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-    // --- Input flags ---
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY); // No software flow control
+    // Disable software flow control and input processing so received bytes
+    // are passed to the application unchanged.
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY); 
     tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK |
                      ISTRIP | INLCR | IGNCR | ICRNL);
 
-    // --- Output flags: raw output ---
+    // Disable output processing so command bytes are transmitted unchanged.
     tty.c_oflag &= ~OPOST;
     tty.c_oflag &= ~ONLCR;
 
-    // --- VMIN / VTIME: blocking read with 100 ms inter-byte timeout ---
-    tty.c_cc[VMIN]  = 0;  // Return as soon as any data arrives…
-    tty.c_cc[VTIME] = 1;  // …or after 0.1 s (units of 0.1 s)
-
+    tty.c_cc[VMIN]  = 0;  // Return as soon as any data arrives
+    tty.c_cc[VTIME] = 0;  
+    
+    // Apply terminal settings, close port if failure.
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
         close(fd);
         fd = -1;
@@ -116,9 +132,9 @@ void ElmoController::setSerialAttributes() {
     tcflush(fd, TCIOFLUSH); // Flush any stale data
 }
 
-// ---------------------------------------------------------------------------
-// disconnect()
-// ---------------------------------------------------------------------------
+/**
+ * Close serial connection.
+ */
 void ElmoController::disconnect() {
     if (fd >= 0) {
         close(fd);
@@ -126,53 +142,46 @@ void ElmoController::disconnect() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// isConnected()
-// ---------------------------------------------------------------------------
+/**
+ * Checks if there is a serial connection.
+ */
 bool ElmoController::isConnected() const {
     return fd >= 0;
 }
 
-// ---------------------------------------------------------------------------
-// sendCommandAndRead()
-// ---------------------------------------------------------------------------
-string ElmoController::sendCommandAndRead(const string& cmd,
-                                               int timeout_ms) {
+/**
+ * Sends and recieves Elmo controller motor commands via serial. Handles data parsing according to Elmo manual.
+ *
+ * Example Flow:
+ * 1. HW Interface sends "PX\r" to Elmo.
+ * 2. Elmo echoes back "PX;PX\r" + "data\r".
+ * 3. Current position recieved once parsed as just "data".
+ */
+string ElmoController::sendCommandAndRead(const string& cmd, int timeout_ms) {
     lock_guard<mutex> lock(port_mutex);
 
     if (!isConnected()) throw runtime_error("Serial port not open!");
 
-    // --- Write command ---
     string full_cmd = cmd + "\r";
     ssize_t written = write(fd, full_cmd.c_str(), full_cmd.size());
     if (written < 0) {
-        throw runtime_error(string("write() failed: ") +
-                                 strerror(errno));
+        throw runtime_error(string("write() failed: ") + strerror(errno));
     }
 
-    // Minimal delay so the drive can prepare its response
-    if (calibration_mode) {
-            this_thread::sleep_for(chrono::milliseconds(2));
-        }
-    else {
-        this_thread::sleep_for(chrono::microseconds(100));
-    }
-
-    // --- Read loop: discard echo, return the first numeric-looking line ---
+    // REMOVED: this_thread::sleep_for(chrono::microseconds(100));
+    
     string response;
     auto start = chrono::steady_clock::now();
 
     while (chrono::duration_cast<chrono::milliseconds>(
                chrono::steady_clock::now() - start).count() < timeout_ms) {
 
-        // Use select() to check readability with a short timeout
         fd_set rfds;
         FD_ZERO(&rfds);
         FD_SET(fd, &rfds);
 
         struct timeval tv;
-        int remaining_ms =
-            timeout_ms -
+        int remaining_ms = timeout_ms - 
             (int)chrono::duration_cast<chrono::milliseconds>(
                 chrono::steady_clock::now() - start).count();
         if (remaining_ms <= 0) break;
@@ -180,19 +189,16 @@ string ElmoController::sendCommandAndRead(const string& cmd,
         tv.tv_usec = (remaining_ms % 1000) * 1000;
 
         int ret = select(fd + 1, &rfds, nullptr, nullptr, &tv);
-        if (ret <= 0) break; // timeout or error
+        if (ret <= 0) break;
 
-        // Read one line (character by character)
         string line;
         char byte;
         while (chrono::duration_cast<chrono::milliseconds>(
                    chrono::steady_clock::now() - start).count() < timeout_ms) {
 
-            // Per-byte select to avoid blocking forever mid-line
             FD_ZERO(&rfds);
             FD_SET(fd, &rfds);
-            int rem2 =
-                timeout_ms -
+            int rem2 = timeout_ms - 
                 (int)chrono::duration_cast<chrono::milliseconds>(
                     chrono::steady_clock::now() - start).count();
             if (rem2 <= 0) break;
@@ -205,7 +211,7 @@ string ElmoController::sendCommandAndRead(const string& cmd,
             if (n <= 0) break;
 
             if (byte == '\r' || byte == '\n') {
-                if (!line.empty()) break; // end of line
+                if (!line.empty()) break;
             } else {
                 line += byte;
             }
@@ -220,51 +226,59 @@ string ElmoController::sendCommandAndRead(const string& cmd,
         auto e = line.find_last_not_of(" \t\r\n");
         if (e != string::npos) line.erase(e + 1);
 
-        // Strip ";CMD" suffix (Elmo echo marker)
-        auto semicolon = line.find(';');
-        if (semicolon != string::npos)
-            line = line.substr(0, semicolon);
-
-        // Accept if it starts with a digit, '-', or '.'
-        if (!line.empty() &&
+        // NEW: Check for error response (starts with digit or '?')
+        // With EO=0, we get response directly without echo
+        if (!line.empty() && 
             (isdigit((unsigned char)line[0]) ||
-             line[0] == '-' || line[0] == '.')) {
+             line[0] == '-' || line[0] == '.' || line[0] == '?')) {
             response = line;
             break;
         }
-        // Otherwise it's the echo — discard and continue
+        
+        // If EO=1 (echo enabled), still strip ";CMD" suffix
+        auto semicolon = line.find(';');
+        if (semicolon != string::npos) {
+            line = line.substr(0, semicolon);
+            if (!line.empty() &&
+                (isdigit((unsigned char)line[0]) ||
+                 line[0] == '-' || line[0] == '.')) {
+                response = line;
+                break;
+            }
+        }
     }
 
     return response;
 }
 
-// ---------------------------------------------------------------------------
-// Motor control
-// ---------------------------------------------------------------------------
+/**
+ * Enables the motor.
+ */
 void ElmoController::motorOn() {
     try {
         sendCommandAndRead("MO=1");
-        if (calibration_mode) {
-            wait(300);
-        }
     } catch (const exception& e) {
         cerr << "Error in motorOn: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Disables the motor.
+ */
 void ElmoController::motorOff() {
     try {
         sendCommandAndRead("MO=0");
-        if (calibration_mode) {
-            wait(100);
-        }
     } catch (const exception& e) {
         cerr << "Error in motorOff: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Non-blocking polls Elmo every 100 ms to detect if motion has stopped. 
+ * eg. if motor has reached position limit.
+ */
 void ElmoController::waitForMotionComplete(int timeout_ms) {
     auto start = chrono::steady_clock::now();
 
@@ -284,57 +298,49 @@ void ElmoController::waitForMotionComplete(int timeout_ms) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Mode setting
-// ---------------------------------------------------------------------------
+/**
+ * Sets Elmo in velocity mode.
+ */
 void ElmoController::setVelocityMode() {
     try {
         sendCommandAndRead("UM=2");
-        if (calibration_mode) {
-            wait(50);
-        }
     } catch (const exception& e) {
         cerr << "Error in setVelocityMode: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Sets Elmo in position mode.
+ */
 void ElmoController::setPositionMode() {
     try {
         sendCommandAndRead("UM=5");
-        if (calibration_mode) {
-            wait(50);
-        }
     } catch (const exception& e) {
         cerr << "Error in setPositionMode: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Sets Elmo in current mode.
+ */
 void ElmoController::setCurrentMode() {
     try {
         sendCommandAndRead("UM=1");
-        if (calibration_mode) {
-            wait(50);
-        }
     } catch (const exception& e) {
         cerr << "Error in setCurrentMode: " << e.what() << endl;
         throw;
     }
 }
 
-// ---------------------------------------------------------------------------
-// Motion commands
-// ---------------------------------------------------------------------------
+/**
+ * Spins motor at specified velocity.
+ */
 void ElmoController::setVelocity(int32_t velocity) {
     try {
         string cmd = "JV=" + to_string(velocity);
         sendCommandAndRead(cmd);
-        
-        if (calibration_mode) {
-            this_thread::sleep_for(chrono::milliseconds(50));
-        }
-        
         beginMotion();
     } catch (const exception& e) {
         cerr << "Error in setVelocity: " << e.what() << endl;
@@ -342,71 +348,73 @@ void ElmoController::setVelocity(int32_t velocity) {
     }
 }
 
+/**
+ * Spins motor at specified current forever.
+ */
 void ElmoController::setCurrent(float current) {
     try {
         string cmd = "TC=" + to_string(current);
         sendCommandAndRead(cmd);
         beginMotion();
-        // Add delay only during calibration
-        if (calibration_mode) {
-            wait(50);
-        }
     } catch (const exception& e) {
         cerr << "Error in setCurrent: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Spins motor to specified encoder position.
+ */
 void ElmoController::setPosition(int32_t position) {
     try {
         string cmd = "PA=" + to_string(position);
         sendCommandAndRead(cmd);
-        if (calibration_mode) {
-            wait(50);
-        }
     } catch (const exception& e) {
         cerr << "Error in setPosition: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Moves motor certain distance from current position.
+ */
 void ElmoController::setPositionRelative(int32_t delta) {
     try {
         string cmd = "PR=" + to_string(delta);
         sendCommandAndRead(cmd);
-        if (calibration_mode) {
-            wait(50);
-        }
     } catch (const exception& e) {
         cerr << "Error in setPositionRelative: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+  * Begins programmed motions that were configured.
+  */
 void ElmoController::beginMotion() {
     try {
         sendCommandAndRead("BG");
-        if (calibration_mode) {
-            this_thread::sleep_for(chrono::milliseconds(50));
-        }
     } catch (const exception& e) {
         cerr << "Error in beginMotion: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Stops current motion on motor.
+ */
 void ElmoController::stopMotion() {
     try {
         sendCommandAndRead("ST");
-        if (calibration_mode) {
-            wait(50);
-        }
     } catch (const exception& e) {
         cerr << "Error in stopMotion: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Spins motor at specified velocity for a specific amount of time.
+ */
 void ElmoController::velocityForTime(int32_t velocity, int duration_ms, int poll_ms) {
     try {
         setVelocity(velocity);
@@ -426,6 +434,9 @@ void ElmoController::velocityForTime(int32_t velocity, int duration_ms, int poll
     }
 }
 
+/**
+ * Spins motor at specified current for a specific amount of time.
+ */
 void ElmoController::currentForTime(float current, int duration_ms, int poll_ms) {
     try {
         setCurrent(current);
@@ -445,9 +456,9 @@ void ElmoController::currentForTime(float current, int duration_ms, int poll_ms)
     }
 }
 
-// ---------------------------------------------------------------------------
-// Queries
-// ---------------------------------------------------------------------------
+/**
+ * Gets current position of the motor via encoder readings.
+ */
 int32_t ElmoController::getPosition() {
     try {
         string response = sendCommandAndRead("PX");
@@ -458,6 +469,9 @@ int32_t ElmoController::getPosition() {
     }
 }
 
+/**
+ * Gets current velocity of the motor.
+ */
 int32_t ElmoController::getVelocity() {
     try {
         string response = sendCommandAndRead("VX");
@@ -468,6 +482,9 @@ int32_t ElmoController::getVelocity() {
     }
 }
 
+/**
+ * Gets current draw of the motor.
+ */
 float ElmoController::getCurrent() {
     try {
         string response = sendCommandAndRead("IQ");
@@ -478,6 +495,9 @@ float ElmoController::getCurrent() {
     }
 }
 
+/**
+ * Gets contents of Elmo status register for enabled, fault, moving, etc.
+ */
 int32_t ElmoController::getStatus() {
     try {
         string response = sendCommandAndRead("SR");
@@ -488,6 +508,9 @@ int32_t ElmoController::getStatus() {
     }
 }
 
+/**
+ * Gets current Elmo controller temperature.
+ */
 float ElmoController::getElmoTemperature() {
     try {
         string response = sendCommandAndRead("TI[1]");
@@ -498,13 +521,16 @@ float ElmoController::getElmoTemperature() {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
+/**
+ * Delay per Elmo thread, useful for delaying a specific motor.
+ */
 void ElmoController::wait(int milliseconds) {
     this_thread::sleep_for(chrono::milliseconds(milliseconds));
 }
 
+/**
+ * Useful for debugging serial transmission, stripped down sendCommandAndRead() for sending raw bytes.
+ */
 void ElmoController::sendRawCommand(const string& cmd) {
     lock_guard<mutex> lock(port_mutex);
     if (!isConnected()) throw runtime_error("Serial port not open!");
@@ -516,6 +542,10 @@ void ElmoController::sendRawCommand(const string& cmd) {
     }
 }
 
+/**
+ * Useful for debugging serial transmission, stripped down sendCommandAndRead() for 
+ * reading raw bytes from Elmo without parsing.
+ */
 string ElmoController::readRawResponse() {
     lock_guard<mutex> lock(port_mutex);
     if (!isConnected()) throw runtime_error("Serial port not open!");
@@ -525,6 +555,9 @@ string ElmoController::readRawResponse() {
     return {};
 }
 
+/**
+ * Gets serial number of a specific Elmo controller.
+ */
 string ElmoController::getSerialNumber() {
     try {
         string response = sendCommandAndRead("SN[4]");
@@ -535,16 +568,21 @@ string ElmoController::getSerialNumber() {
     }
 }
 
+/**
+ * Zeros out encoder position.
+ */
 void ElmoController::zeroPosition() {
     try {
         sendCommandAndRead("PX=0");
-        wait(2);
     } catch (const exception& e) {
         cerr << "Error in zeroPosition: " << e.what() << endl;
         throw;
     }
 }
 
+/**
+ * Finds mechanical hard stop of actuator that does not have built in limit switch.
+ */
 bool ElmoController::homeToHardStop(float current, int direction,
                                      int32_t stall_velocity_threshold,
                                      int stall_time_ms,
@@ -603,6 +641,24 @@ bool ElmoController::homeToHardStop(float current, int direction,
     } catch (const exception& e) {
         cerr << "Error in homeToHardStop: " << e.what() << endl;
         stopMotion();
+        throw;
+    }
+}
+
+void ElmoController::disableEcho() {
+    try {
+        sendCommandAndRead("EO=0");
+    } catch (const exception& e) {
+        cerr << "Error disabling echo: " << e.what() << endl;
+        throw;
+    }
+}
+
+void ElmoController::enableEcho() {
+    try {
+        sendCommandAndRead("EO=1");
+    } catch (const exception& e) {
+        cerr << "Error enabling echo: " << e.what() << endl;
         throw;
     }
 }

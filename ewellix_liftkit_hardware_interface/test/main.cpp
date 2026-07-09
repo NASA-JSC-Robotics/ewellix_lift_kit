@@ -25,8 +25,8 @@ pair<ElmoController&, ElmoController&> assignPorts(ElmoController& ctrlA, ElmoCo
     string snA = ctrlA.getSerialNumber();
     string snB = ctrlB.getSerialNumber();
 
-    cout << "ACM0 SN: " << snA << " = " << ElmoMap.at(snA) << endl;
-    cout << "ACM1 SN: " << snB << " = " << ElmoMap.at(snB) << endl;
+    cout << "ACM2 SN: " << snA << " = " << ElmoMap.at(snA) << endl;
+    cout << "ACM3 SN: " << snB << " = " << ElmoMap.at(snB) << endl;
 
     if (ElmoMap.at(snA) == "topMotor") {
         return {ctrlA, ctrlB};  // ctrlA is top, ctrlB is bot
@@ -37,8 +37,8 @@ pair<ElmoController&, ElmoController&> assignPorts(ElmoController& ctrlA, ElmoCo
 
 int main() {
     try {
-        ElmoController controllerA("/dev/ttyACM0", 115200);
-        ElmoController controllerB("/dev/ttyACM1", 115200);
+        ElmoController controllerA("/dev/ttyACM2", 115200);
+        ElmoController controllerB("/dev/ttyACM3", 115200);
 
         auto [elmoTop, elmoBot] = assignPorts(controllerA, controllerB);
 

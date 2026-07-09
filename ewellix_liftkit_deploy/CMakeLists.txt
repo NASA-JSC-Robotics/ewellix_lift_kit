@@ -10,15 +10,18 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclpy REQUIRED)
 
+# Install configuration, launch, and rviz files
 install(
   DIRECTORY config launch rviz 
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Install Python scripts
 install(PROGRAMS scripts/test_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
-
+# Export dependencies so they're available to packages that depend on this one
+ament_export_dependencies(ament_cmake_python rclpy)
 
 ament_package()

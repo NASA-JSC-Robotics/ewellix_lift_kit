@@ -70,6 +70,8 @@ private:
   double state_position_;
   double state_velocity_;
   double command_position_;
+  double state_position_ticks_ = 0.0; 
+  double state_velocity_ticks_per_sec_ = 0.0; 
 
   // Motor parameters
   std::string port_top_;

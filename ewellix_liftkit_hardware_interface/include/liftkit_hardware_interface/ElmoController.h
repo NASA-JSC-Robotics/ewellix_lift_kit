@@ -73,7 +73,8 @@ public:
     string getSerialNumber();
 
     float getElmoTemperature();
-
+    void disableEcho();
+    void enableEcho();
     // Homing
     bool homeToHardStop(float current, int direction,
                          int32_t stall_velocity_threshold = STALL_VELOCITY_THRESH,

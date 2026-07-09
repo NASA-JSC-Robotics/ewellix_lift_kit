@@ -123,6 +123,10 @@ std::vector<hardware_interface::StateInterface> ElmoLiftkitHardwareInterface::ex
       hardware_interface::StateInterface(joint_name_, "position", &state_position_));
   state_interfaces.emplace_back(
       hardware_interface::StateInterface(joint_name_, "velocity", &state_velocity_));
+    state_interfaces.emplace_back(
+      hardware_interface::StateInterface(joint_name_, "position_ticks", &state_position_ticks_));
+  state_interfaces.emplace_back(
+      hardware_interface::StateInterface(joint_name_, "velocity_ticks_per_sec", &state_velocity_ticks_per_sec_));
 
   RCLCPP_INFO(get_logger(), "Exported %zu state interfaces", state_interfaces.size());
   return state_interfaces;
@@ -174,6 +178,19 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
 {
   RCLCPP_INFO(get_logger(), "Activating...");
 
+  // Sync xacro files before activating
+  const char* home = getenv("HOME");
+  if (home != nullptr) {
+    string script_path = string(home) + "/ewellix_lift_kit/ewellix_liftkit_deploy/scripts/update_xacro_from_yaml.py";
+    string sync_command = "python3 " + script_path + " > /dev/null 2>&1";
+    int result = system(sync_command.c_str());
+    if (result == 0) {
+      RCLCPP_INFO(get_logger(), "Xacro files synced");
+    } else {
+      RCLCPP_WARN(get_logger(), "Failed to sync xacro files");
+    }
+  }
+
   try
   {
     if (!is_fake_hardware_)
@@ -182,6 +199,15 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
       elmo_bottom_->connect();
 
       elmo_top_->wait(500);
+
+      // DISABLE ECHO for faster serial communication
+      RCLCPP_INFO(get_logger(), "Disabling echo for faster communication...");
+      try {
+        elmo_top_->disableEcho();
+        elmo_bottom_->disableEcho();
+      } catch (const exception& e) {
+        RCLCPP_WARN(get_logger(), "Failed to disable echo: %s", e.what());
+      }
 
       // Verify/correct top vs bottom assignment via serial number
       static const map<string, string> kElmoMap = {
@@ -213,8 +239,8 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
       elmo_bottom_->sendRawCommand("DC=500");
       elmo_top_->sendRawCommand("SD=500");
       elmo_bottom_->sendRawCommand("SD=500");
-      elmo_top_->sendRawCommand("SP=30");
-      elmo_bottom_->sendRawCommand("SP=30");
+      elmo_top_->sendRawCommand("SP=100");
+      elmo_bottom_->sendRawCommand("SP=100");
       elmo_top_->motorOn();
       elmo_bottom_->motorOn();
 
@@ -293,31 +319,37 @@ hardware_interface::return_type ElmoLiftkitHardwareInterface::read(
   {
     if (!is_fake_hardware_)
     {
-      // Read cached atomic values (no serial latency)
       int32_t top_ticks = cached_top_ticks_.load();
       int32_t bottom_ticks = cached_bottom_ticks_.load();
       int32_t top_vel = cached_top_vel_.load();
       int32_t bottom_vel = cached_bottom_vel_.load();
 
-      // Position: scale ticks to height range
       int32_t total_ticks = top_ticks + bottom_ticks;
+      int32_t total_vel = top_vel + bottom_vel;
+
+      // Scaled values (m and m/s)
       double pos = (static_cast<double>(total_ticks) / max_ticks_total_) * 
                    (max_height_m_ - min_height_m_) + min_height_m_;
-
-      // Velocity: same scaling
-      int32_t total_vel = top_vel + bottom_vel;
       double vel = (static_cast<double>(total_vel) / max_ticks_total_) * 
                    (max_height_m_ - min_height_m_);
+
+      // Raw tick values
+      state_position_ticks_ = static_cast<double>(total_ticks);
+      state_velocity_ticks_per_sec_ = static_cast<double>(total_vel);
 
       state_position_ = pos;
       state_velocity_ = vel;
     }
     else
     {
-      // Fake hardware simulation
+      // Fake hardware
       double error = command_position_ - state_position_;
       state_position_ = state_position_ + error / 10.0;
       state_velocity_ = error / 10.0;
+      
+      // Fake ticks too
+      state_position_ticks_ = state_position_ * max_ticks_total_ / (max_height_m_ - min_height_m_);
+      state_velocity_ticks_per_sec_ = state_velocity_ * max_ticks_total_ / (max_height_m_ - min_height_m_);
     }
   }
   catch (const exception& e)

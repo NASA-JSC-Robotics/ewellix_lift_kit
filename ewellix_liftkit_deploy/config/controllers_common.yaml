@@ -10,8 +10,29 @@ controller_manager:
     lift_position_controller:
       type: forward_command_controller/ForwardCommandController
 
+joint_state_broadcaster:
+  ros__parameters:
+    interfaces:
+      - position
+      - velocity
+      
 lift_position_controller:
   ros__parameters:
     joints:
       - ewellix_lift_lower_to_higher
     interface_name: position
+    max_ticks_mot_1: ${ewellix_liftkit.max_ticks_mot_1}
+    max_ticks_mot_2: ${ewellix_liftkit.max_ticks_mot_2}
+    min_height_m: ${ewellix_liftkit.min_height_m}
+    max_height_m: ${ewellix_liftkit.max_height_m}
+    height_limit: ${ewellix_liftkit.height_limit}
+    homing_current_a: ${ewellix_liftkit.homing_current_a}
+    stall_velocity_thresh: ${ewellix_liftkit.stall_velocity_thresh}
+    stall_time_ms: ${ewellix_liftkit.stall_time_ms}
+    homing_timeout_ms: ${ewellix_liftkit.homing_timeout_ms}
+    poll_ms: ${ewellix_liftkit.poll_ms}
+    backoff_counts: ${ewellix_liftkit.backoff_counts}
+    top_home_direction: ${ewellix_liftkit.top_home_direction}
+    bottom_home_direction: ${ewellix_liftkit.bottom_home_direction}
+    calibration_direction: ${ewellix_liftkit.calibration_direction}
+    initial_value: ${ewellix_liftkit.initial_value}
