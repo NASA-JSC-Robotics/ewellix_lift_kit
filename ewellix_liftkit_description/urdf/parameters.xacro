@@ -17,8 +17,8 @@
   <xacro:arg name="min_ticks_mot_2" default="0" />
   
   <!-- Height parameters -->
-  <xacro:arg name="min_height_m" default="0.048" />
-  <xacro:arg name="max_height_m" default="0.587" />
+  <xacro:arg name="min_height_m" default="0.048000" />
+  <xacro:arg name="max_height_m" default="0.587000" />
   <xacro:arg name="height_limit" default="0.6" />
   
   <!-- Hardware parameters -->

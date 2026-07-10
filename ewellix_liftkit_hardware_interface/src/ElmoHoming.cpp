@@ -25,6 +25,17 @@ pair<ElmoController&, ElmoController&> assignPorts(ElmoController& ctrlA, ElmoCo
     string snA = ctrlA.getSerialNumber();
     string snB = ctrlB.getSerialNumber();
 
+    // STRIP SEMICOLONS from serial numbers
+    auto strip_semicolon = [](string& sn) {
+        size_t pos = sn.find(';');
+        if (pos != string::npos) {
+            sn = sn.substr(0, pos);
+        }
+    };
+    
+    strip_semicolon(snA);
+    strip_semicolon(snB);
+
     cout << "ACM2: " << snA << " = " << ElmoMap.at(snA) << endl;
     cout << "ACM3: " << snB << " = " << ElmoMap.at(snB) << endl;
 

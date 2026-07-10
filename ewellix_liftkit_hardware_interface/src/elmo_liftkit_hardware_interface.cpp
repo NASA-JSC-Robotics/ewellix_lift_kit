@@ -218,6 +218,16 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
       string sn_top = elmo_top_->getSerialNumber();
       string sn_bottom = elmo_bottom_->getSerialNumber();
 
+      auto strip_semicolon = [](string& sn) {
+      size_t pos = sn.find(';');
+      if (pos != string::npos) {
+        sn = sn.substr(0, pos);
+        }
+      };
+
+      strip_semicolon(sn_top);
+      strip_semicolon(sn_bottom);
+
       RCLCPP_INFO(get_logger(), "Top port SN: %s (%s)", sn_top.c_str(),
                   kElmoMap.count(sn_top) ? kElmoMap.at(sn_top).c_str() : "UNKNOWN");
       RCLCPP_INFO(get_logger(), "Bottom port SN: %s (%s)", sn_bottom.c_str(),
