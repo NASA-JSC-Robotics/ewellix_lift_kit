@@ -245,10 +245,10 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
       elmo_bottom_->setPositionMode();
       elmo_top_->sendRawCommand("AC=100");
       elmo_bottom_->sendRawCommand("AC=100");
-      elmo_top_->sendRawCommand("DC=500");
-      elmo_bottom_->sendRawCommand("DC=500");
-      elmo_top_->sendRawCommand("SD=500");
-      elmo_bottom_->sendRawCommand("SD=500");
+      elmo_top_->sendRawCommand("DC=100");
+      elmo_bottom_->sendRawCommand("DC=100");
+      elmo_top_->sendRawCommand("SD=100");
+      elmo_bottom_->sendRawCommand("SD=100");
       elmo_top_->sendRawCommand("SP=100");
       elmo_bottom_->sendRawCommand("SP=100");
       elmo_top_->motorOn();

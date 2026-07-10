@@ -12,8 +12,8 @@ ewellix_liftkit:
   
   # Hardware parameters
   use_fake_hardware: false
-  com_port_top: /dev/ttyACM0
-  com_port_bottom: /dev/ttyACM1
+  com_port_top: /dev/ttyACM2
+  com_port_bottom: /dev/ttyACM3
   
   # Configuration
   is_700: true
