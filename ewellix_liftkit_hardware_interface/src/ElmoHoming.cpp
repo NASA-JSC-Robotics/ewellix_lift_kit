@@ -149,15 +149,6 @@ void crawlUntilStop(ElmoController& controller, const string& label,
 }
 
 int main(int argc, char** argv) {
-    if (argc < 2 || (string(argv[1]) != "up" && string(argv[1]) != "down")) {
-        cerr << "Usage: " << argv[0] << " <up|down>" << endl;
-        return -1;
-    }
-
-    string direction = argv[1];
-    bool is_up = (direction == "up");
-    int32_t speed = is_up ? 50 : -50;
-
     try {
         // Get HOME directory for portable paths
         const char* home = getenv("HOME");
@@ -178,53 +169,67 @@ int main(int argc, char** argv) {
         printHeader("Connecting Motors");
         auto [elmoTop, elmoBot] = assignPorts(ctrlA, ctrlB);
 
-        printHeader("Calibrating " + direction);
-        bool topSuccess = false, botSuccess = false;
-        int32_t topTicks = 0, botTicks = 0;
-
-        // Run motors sequentially
-        crawlUntilStop(elmoTop, "topMotor", speed, topSuccess, topTicks);
+        // ===== CALIBRATE DOWN =====
+        printHeader("Calibrating DOWN");
+        bool topSuccess_down = false, botSuccess_down = false;
+        int32_t topTicks_down = 0, botTicks_down = 0;
+        
+        crawlUntilStop(elmoTop, "topMotor", -30, topSuccess_down, topTicks_down);
         elmoTop.motorOff();
-        crawlUntilStop(elmoBot, "bottomMotor", speed, botSuccess, botTicks);
+        elmoTop.wait(1000);  // Pause between directions
+        
+        crawlUntilStop(elmoBot, "bottomMotor", -30, botSuccess_down, botTicks_down);
         elmoBot.motorOff();
         
-        cout << "\n=== RESULTS ===" << endl;
-        if (is_up) {
-            cout << "Top Motor:    " << (topSuccess ? "OK" : "FAILED") << " - " << topTicks << " ticks" << endl;
-            cout << "Bottom Motor: " << (botSuccess ? "OK" : "FAILED") << " - " << botTicks << " ticks" << endl;
-        } else {
-            cout << "Top Motor:    " << (topSuccess ? "OK" : "FAILED") << " - " << "0" << " ticks" << endl;
-            cout << "Bottom Motor: " << (botSuccess ? "OK" : "FAILED") << " - " << "0" << " ticks" << endl;
-        }
+        cout << "\n=== DOWN Results ===" << endl;
+        cout << "Top Motor:    " << (topSuccess_down ? "OK" : "FAILED") << " - encoder zeroed" << endl;
+        cout << "Bottom Motor: " << (botSuccess_down ? "OK" : "FAILED") << " - encoder zeroed" << endl;
         
-        cout << "\nEnter height in meters: ";
-        double height_m;
-        cin >> height_m;
+        cout << "\nEnter minimum height in meters: ";
+        double min_height_m;
+        cin >> min_height_m;
+        
+        // ===== CALIBRATE UP =====
+        printHeader("Calibrating UP");
+        bool topSuccess_up = false, botSuccess_up = false;
+        int32_t topTicks_up = 0, botTicks_up = 0;
+        
+        crawlUntilStop(elmoTop, "topMotor", 30, topSuccess_up, topTicks_up);
+        elmoTop.motorOff();
+        elmoTop.wait(1000);
+        
+        crawlUntilStop(elmoBot, "bottomMotor", 30, botSuccess_up, botTicks_up);
+        elmoBot.motorOff();
+        
+        cout << "\n=== UP Results ===" << endl;
+        cout << "Top Motor:    " << (topSuccess_up ? "OK" : "FAILED") << " - " << topTicks_up << " ticks" << endl;
+        cout << "Bottom Motor: " << (botSuccess_up ? "OK" : "FAILED") << " - " << botTicks_up << " ticks" << endl;
+        
+        cout << "\nEnter maximum height in meters: ";
+        double max_height_m;
+        cin >> max_height_m;
 
         printHeader("Saving Calibration");
         
-        // Update parameters file in deploy config
+        // ===== UPDATE BOTH FILES ONCE =====
+        
+        // Update parameters YAML file
         ifstream params_in(params_path);
         string params_content((istreambuf_iterator<char>(params_in)), istreambuf_iterator<char>());
         params_in.close();
         
-        if (is_up) {
-            // Update max_ticks and max_height
-            params_content = regex_replace(params_content, 
-                regex(R"(max_ticks_mot_1:\s*\d+)"),
-                "max_ticks_mot_1: " + to_string(topTicks));
-            params_content = regex_replace(params_content, 
-                regex(R"(max_ticks_mot_2:\s*\d+)"),
-                "max_ticks_mot_2: " + to_string(botTicks));
-            params_content = regex_replace(params_content, 
-                regex(R"(max_height_m:\s*[\d.]+)"),
-                "max_height_m: " + to_string(height_m));
-        } else {
-            // Update min_height
-            params_content = regex_replace(params_content, 
-                regex(R"(min_height_m:\s*[\d.]+)"),
-                "min_height_m: " + to_string(height_m));
-        }
+        params_content = regex_replace(params_content, 
+            regex(R"(max_ticks_mot_1:\s*\d+)"),
+            "max_ticks_mot_1: " + to_string(topTicks_up));
+        params_content = regex_replace(params_content, 
+            regex(R"(max_ticks_mot_2:\s*\d+)"),
+            "max_ticks_mot_2: " + to_string(botTicks_up));
+        params_content = regex_replace(params_content, 
+            regex(R"(max_height_m:\s*[\d.]+)"),
+            "max_height_m: " + to_string(max_height_m));
+        params_content = regex_replace(params_content, 
+            regex(R"(min_height_m:\s*[\d.]+)"),
+            "min_height_m: " + to_string(min_height_m));
         
         ofstream params_out(params_path);
         if (params_out.is_open()) {
@@ -233,28 +238,23 @@ int main(int argc, char** argv) {
             params_out.close();
         }
         
-        // Update xacro parameters file
+        // Update xacro file
         ifstream xacro_in(urdf_path);
         string xacro_content((istreambuf_iterator<char>(xacro_in)), istreambuf_iterator<char>());
         xacro_in.close();
         
-        if (is_up) {
-            // Update max_ticks and max_height in xacro
-            xacro_content = regex_replace(xacro_content, 
-                regex(R"(max_ticks_mot_1" default="[^"]+)"),
-                "max_ticks_mot_1\" default=\"" + to_string(topTicks));
-            xacro_content = regex_replace(xacro_content, 
-                regex(R"(max_ticks_mot_2" default="[^"]+)"),
-                "max_ticks_mot_2\" default=\"" + to_string(botTicks));
-            xacro_content = regex_replace(xacro_content, 
-                regex(R"(max_height_m" default="[^"]+)"),
-                "max_height_m\" default=\"" + to_string(height_m));
-        } else {
-            // Update min_height in xacro
-            xacro_content = regex_replace(xacro_content, 
-                regex(R"(min_height_m" default="[^"]+)"),
-                "min_height_m\" default=\"" + to_string(height_m));
-        }
+        xacro_content = regex_replace(xacro_content, 
+            regex(R"(max_ticks_mot_1" default="[^"]+)"),
+            "max_ticks_mot_1\" default=\"" + to_string(topTicks_up));
+        xacro_content = regex_replace(xacro_content, 
+            regex(R"(max_ticks_mot_2" default="[^"]+)"),
+            "max_ticks_mot_2\" default=\"" + to_string(botTicks_up));
+        xacro_content = regex_replace(xacro_content, 
+            regex(R"(max_height_m" default="[^"]+)"),
+            "max_height_m\" default=\"" + to_string(max_height_m));
+        xacro_content = regex_replace(xacro_content, 
+            regex(R"(min_height_m" default="[^"]+)"),
+            "min_height_m\" default=\"" + to_string(min_height_m));
         
         ofstream xacro_out(urdf_path);
         if (xacro_out.is_open()) {
@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
         elmoTop.disconnect();
         elmoBot.disconnect();
         
-        cout << "\n=== Calibration Complete ===" << endl;
+        cout << "\n=== Full Calibration Complete ===" << endl;
 
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;

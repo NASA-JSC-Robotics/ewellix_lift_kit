@@ -11,11 +11,15 @@
   <xacro:arg name="parent" default="world" />
   
   <!-- Motor parameters -->
-  <xacro:arg name="max_ticks_mot_1" default="871" />
-  <xacro:arg name="max_ticks_mot_2" default="870" />
+  <xacro:arg name="max_ticks_mot_1" default="870" />
+  <xacro:arg name="max_ticks_mot_2" default="868" />
   <xacro:arg name="min_ticks_mot_1" default="0" />
   <xacro:arg name="min_ticks_mot_2" default="0" />
-  
+  <xacro:arg name="motor_acceleration" default="100" />
+  <xacro:arg name="motor_deceleration" default="100" />
+  <xacro:arg name="motor_stop_decel" default="100" />
+  <xacro:arg name="motor_speed_profile" default="100" />
+
   <!-- Height parameters -->
   <xacro:arg name="min_height_m" default="0.048000" />
   <xacro:arg name="max_height_m" default="0.587000" />
@@ -26,7 +30,7 @@
   <xacro:arg name="com_port_top" default="/dev/ttyACM0" />
   <xacro:arg name="com_port_bottom" default="/dev/ttyACM1" />
   
-  <!-- Configuration -->
+  <!-- Configuration -->       
   <xacro:arg name="is_700" default="true" />
   <xacro:arg name="is_500" default="false" />
   <xacro:arg name="omit_plates" default="false" />

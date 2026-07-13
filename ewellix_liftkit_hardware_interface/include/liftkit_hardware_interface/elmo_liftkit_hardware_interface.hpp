@@ -82,6 +82,12 @@ private:
   int32_t max_ticks_mot_2_;
   int32_t max_ticks_total_;
 
+    // Motor control parameters
+  int32_t motor_acceleration_;
+  int32_t motor_deceleration_;
+  int32_t motor_stop_decel_;
+  int32_t motor_speed_profile_;
+
   float homing_current_a_;
   int32_t stall_velocity_thresh_;
   int stall_time_ms_;

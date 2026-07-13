@@ -62,6 +62,11 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_init(
     calibration_direction_ = get_param("calibration_direction");
     height_limit_ = stof(get_param("height_limit"));
 
+    motor_acceleration_ = stoi(get_param("motor_acceleration"));
+    motor_deceleration_ = stoi(get_param("motor_deceleration"));
+    motor_stop_decel_ = stoi(get_param("motor_stop_decel"));
+    motor_speed_profile_ = stoi(get_param("motor_speed_profile"));
+
     is_fake_hardware_ = (port_top_ == "/dev/null");
   }
   catch (const exception& e)
@@ -243,14 +248,19 @@ CallbackReturn ElmoLiftkitHardwareInterface::on_activate(
       elmo_bottom_->motorOff(); 
       elmo_top_->setPositionMode();
       elmo_bottom_->setPositionMode();
-      elmo_top_->sendRawCommand("AC=100");
-      elmo_bottom_->sendRawCommand("AC=100");
-      elmo_top_->sendRawCommand("DC=100");
-      elmo_bottom_->sendRawCommand("DC=100");
-      elmo_top_->sendRawCommand("SD=100");
-      elmo_bottom_->sendRawCommand("SD=100");
-      elmo_top_->sendRawCommand("SP=100");
-      elmo_bottom_->sendRawCommand("SP=100");
+      string ac_cmd = "AC=" + to_string(motor_acceleration_);
+      string dc_cmd = "DC=" + to_string(motor_deceleration_);
+      string sd_cmd = "SD=" + to_string(motor_stop_decel_);
+      string sp_cmd = "SP=" + to_string(motor_speed_profile_);
+      
+      elmo_top_->sendRawCommand(ac_cmd);
+      elmo_bottom_->sendRawCommand(ac_cmd);
+      elmo_top_->sendRawCommand(dc_cmd);
+      elmo_bottom_->sendRawCommand(dc_cmd);
+      elmo_top_->sendRawCommand(sd_cmd);
+      elmo_bottom_->sendRawCommand(sd_cmd);
+      elmo_top_->sendRawCommand(sp_cmd);
+      elmo_bottom_->sendRawCommand(sp_cmd);
       elmo_top_->motorOn();
       elmo_bottom_->motorOn();
 

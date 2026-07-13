@@ -202,6 +202,36 @@ def generate_launch_description():
             description="Initial value",
         )
     )
+    # === ADD MOTOR CONTROL PARAMETERS ===
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "motor_acceleration",
+            default_value=str(params['motor_acceleration']),
+            description="Motor acceleration (AC parameter)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "motor_deceleration",
+            default_value=str(params['motor_deceleration']),
+            description="Motor deceleration (DC parameter)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "motor_stop_decel",
+            default_value=str(params['motor_stop_decel']),
+            description="Motor stop deceleration (SD parameter)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "motor_speed_profile",
+            default_value=str(params['motor_speed_profile']),
+            description="Motor speed profile (SP parameter)",
+        )
+    )
+    # =====================================
     declared_arguments.append(
         DeclareLaunchArgument(
             "rviz",
@@ -233,6 +263,12 @@ def generate_launch_description():
     bottom_home_direction   = LaunchConfiguration("bottom_home_direction")
     calibration_direction   = LaunchConfiguration("calibration_direction")
     initial_value           = LaunchConfiguration("initial_value")
+    # === ADD MOTOR CONTROL PARAMETERS ===
+    motor_acceleration      = LaunchConfiguration("motor_acceleration")
+    motor_deceleration      = LaunchConfiguration("motor_deceleration")
+    motor_stop_decel        = LaunchConfiguration("motor_stop_decel")
+    motor_speed_profile     = LaunchConfiguration("motor_speed_profile")
+    # =====================================
 
     robot_description_content = Command(
         [
@@ -283,6 +319,15 @@ def generate_launch_description():
             "calibration_direction:=", calibration_direction,
             " ",
             "initial_value:=",        initial_value,
+            " ",
+            "motor_acceleration:=",   motor_acceleration,
+            " ",
+            "motor_deceleration:=",   motor_deceleration,
+            " ",
+            "motor_stop_decel:=",     motor_stop_decel,
+            " ",
+            "motor_speed_profile:=",  motor_speed_profile,
+            # =====================================
         ]
     )
 

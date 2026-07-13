@@ -22,7 +22,11 @@
     poll_ms:=20
     backoff_counts:=500
     top_home_direction:=1
-    bottom_home_direction:=1">
+    bottom_home_direction:=1
+    motor_acceleration:=100
+    motor_deceleration:=100
+    motor_stop_decel:=100
+    motor_speed_profile:=100">
 
     <!-- Single system controlling both motors -->
     <xacro:if value="${not (use_fake_hardware or use_gazebo)}">
@@ -46,6 +50,12 @@
           <param name="bottom_home_direction">${bottom_home_direction}</param>
           <param name="calibration_direction">${calibration_direction}</param>
           <param name="height_limit">${height_limit}</param>
+          <!-- === ADD THESE 4 LINES === -->
+          <param name="motor_acceleration">${motor_acceleration}</param>
+          <param name="motor_deceleration">${motor_deceleration}</param>
+          <param name="motor_stop_decel">${motor_stop_decel}</param>
+          <param name="motor_speed_profile">${motor_speed_profile}</param>
+          <!-- ========================= -->
         </hardware>
         <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
           <command_interface name="position">
@@ -79,6 +89,12 @@
           <param name="bottom_home_direction">${bottom_home_direction}</param>
           <param name="calibration_direction">${calibration_direction}</param>
           <param name="height_limit">${height_limit}</param>
+          <!-- === ADD THESE 4 LINES === -->
+          <param name="motor_acceleration">${motor_acceleration}</param>
+          <param name="motor_deceleration">${motor_deceleration}</param>
+          <param name="motor_stop_decel">${motor_stop_decel}</param>
+          <param name="motor_speed_profile">${motor_speed_profile}</param>
+          <!-- ========================= -->
         </hardware>
         <joint name="${tf_prefix}ewellix_lift_lower_to_higher">
           <command_interface name="position">

@@ -36,3 +36,8 @@ lift_position_controller:
     bottom_home_direction: ${ewellix_liftkit.bottom_home_direction}
     calibration_direction: ${ewellix_liftkit.calibration_direction}
     initial_value: ${ewellix_liftkit.initial_value}
+    motor_acceleration: ${ewellix_liftkit.motor_acceleration}
+    motor_deceleration: ${ewellix_liftkit.motor_deceleration}
+    motor_stop_decel: ${ewellix_liftkit.motor_stop_decel}
+    motor_speed_profile: ${ewellix_liftkit.motor_speed_profile}
+    
