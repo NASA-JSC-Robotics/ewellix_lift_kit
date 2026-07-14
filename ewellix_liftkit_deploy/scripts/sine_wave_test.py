@@ -27,29 +27,53 @@ class SineWaveCommandPublisher(Node):
         )
         
         # Timer to publish commands at 45Hz
-        self.timer = self.create_timer(1/45, self.publish_sine_wave)
+        self.timer = self.create_timer(1/45, self.publish_command)
         
         # Sine wave parameters
         self.center = 0.300      # Center position (meters)
         self.amplitude = 0.150   # Amplitude above/below center (meters)
-        self.period = 30.0        # Full cycle time (seconds)
+        self.period = 40.0        # Full cycle time (seconds)
         self.start_time = time.time()
+        
+        # Initialization phase
+        self.init_duration = 10.0  # Hold at center for 5 seconds
+        self.init_complete = False
+        self.sine_start_time = None
         
         # Latest feedback
         self.latest_position = 0.0
         self.latest_velocity = 0.0
         
-        self.get_logger().info(f'Sine Wave Publisher Started')
-        self.get_logger().info(f'  Center: {self.center}m, Amplitude: {self.amplitude}m, Period: {self.period}s')
+        self.get_logger().info('Sine Wave Publisher Started')
+        self.get_logger().info(f'  Phase 1: Hold at center ({self.center}m) for {self.init_duration}s')
+        self.get_logger().info(f'  Phase 2: Sine wave - Center: {self.center}m, Amplitude: {self.amplitude}m, Period: {self.period}s')
     
-    def publish_sine_wave(self):
-        """Publish sine wave position command"""
+    def publish_command(self):
+        """Publish position command based on current phase"""
         elapsed = time.time() - self.start_time
         
-        # Calculate sine wave position
-        # position = center + amplitude * sin(2π*t/period)
-        angle = 2.0 * math.pi * elapsed / self.period
-        position = self.center + self.amplitude * math.sin(angle)
+        # Phase 1: Initialize at center position for 5 seconds
+        if not self.init_complete:
+            if elapsed < self.init_duration:
+                position = self.center
+                phase_info = "INIT"
+            else:
+                # Transition to sine wave phase
+                self.init_complete = True
+                self.sine_start_time = time.time()
+                self.get_logger().info(f'✓ Initialization complete. Starting sine wave motion.')
+                position = self.center
+                phase_info = "INIT→SINE"
+        
+        # Phase 2: Continuous sine wave
+        if self.init_complete:
+            sine_elapsed = time.time() - self.sine_start_time
+            
+            # Calculate sine wave position
+            # position = center + amplitude * sin(2π*t/period)
+            angle = 2.0 * math.pi * sine_elapsed / self.period
+            position = self.center + self.amplitude * math.sin(angle)
+            phase_info = "SINE"
         
         # Clamp to safe range
         position = max(0.048, min(0.540, position))
@@ -65,7 +89,7 @@ class SineWaveCommandPublisher(Node):
         # Log with comparison to actual
         error = position - self.latest_position
         self.get_logger().info(
-            f't={elapsed:6.2f}s | Cmd: {position:.4f}m | Actual: {self.latest_position:.4f}m | '
+            f'[{phase_info}] t={elapsed:6.2f}s | Cmd: {position:.4f}m | Actual: {self.latest_position:.4f}m | '
             f'Error: {error:+.4f}m | Vel: {self.latest_velocity:.4f}m/s'
         )
     

@@ -387,24 +387,114 @@ hardware_interface::return_type ElmoLiftkitHardwareInterface::write(
   {
     if (!is_fake_hardware_)
     {
-      double target = std::max(min_height_m_, std::min(command_position_, height_limit_));
-      
-      // Convert target height to ticks
-      int32_t target_ticks = static_cast<int32_t>(
-        (target - min_height_m_) / (max_height_m_ - min_height_m_) * max_ticks_total_
-      );
-      
-      // Split evenly between motors
-      int32_t ticks_per_motor = target_ticks / 2;
-      
-      // Use absolute position mode (direct tick control)
-      elmo_top_->setPosition(ticks_per_motor);
-      elmo_bottom_->setPosition(ticks_per_motor);
-      elmo_top_->beginMotion();
-      elmo_bottom_->beginMotion();
+      // Clamp commanded height to valid range
+      double target_m = std::max(min_height_m_, std::min(command_position_, height_limit_));
+
+      // Convert target height to total ticks needed
+      int32_t desired_total_ticks = static_cast<int32_t>(
+          (target_m - min_height_m_) / (max_height_m_ - min_height_m_) * max_ticks_total_);
+
+      // Get current state
+      int32_t current_bottom = cached_bottom_ticks_.load();
+      int32_t current_top = cached_top_ticks_.load();
+      int32_t current_total = current_bottom + current_top;
+
+      // Determine direction of motion
+      bool extending = (desired_total_ticks > current_total);
+      bool retracting = (desired_total_ticks < current_total);
+
+      int32_t target_bottom_ticks = 0;
+      int32_t target_top_ticks = 0;
+
+      if (extending)
+      {
+        // EXTEND: Bottom fills first, then top
+        // Bottom goes up to its max
+        target_bottom_ticks = std::min(desired_total_ticks, max_ticks_mot_1_);
+        // Top takes the remainder
+        target_top_ticks = std::max(0, desired_total_ticks - max_ticks_mot_1_);
+
+        // Sequential logic: only move top when bottom is near max or at max
+        int32_t bottom_threshold = static_cast<int32_t>(max_ticks_mot_1_ * 0.95); // 95% of bottom max
+        if (current_bottom < bottom_threshold)
+        {
+          // Bottom hasn't reached threshold yet, only extend bottom
+          target_top_ticks = current_top; // Keep top stationary
+        }
+      }
+      else if (retracting)
+      {
+        // RETRACT: Top retracts first, then bottom
+        // Only retract bottom after top is mostly retracted
+        int32_t top_threshold = static_cast<int32_t>(max_ticks_mot_2_ * 0.03); // 5% of top max
+        
+        if (current_top > top_threshold)
+        {
+          // Top still has extension, retract it first
+          target_top_ticks = std::max(0, desired_total_ticks - max_ticks_mot_1_);
+          target_bottom_ticks = current_bottom; // Keep bottom stationary
+        }
+        else
+        {
+          // Top is retracted, now retract bottom
+          target_bottom_ticks = std::max(0, desired_total_ticks);
+          target_top_ticks = 0;
+        }
+      }
+      else
+      {
+        // Not moving, maintain current positions
+        target_bottom_ticks = current_bottom;
+        target_top_ticks = current_top;
+      }
+
+      // Apply rate limiting to avoid jerky motion
+      const int32_t max_step = 200; // ticks per write cycle, tune as needed
+      auto apply_rate_limit = [&](int32_t current, int32_t target) -> int32_t {
+        int32_t delta = target - current;
+        if (delta > max_step) return current + max_step;
+        if (delta < -max_step) return current - max_step;
+        return target;
+      };
+
+      target_bottom_ticks = apply_rate_limit(current_bottom, target_bottom_ticks);
+      target_top_ticks = apply_rate_limit(current_top, target_top_ticks);
+
+      // Send commands only if targets changed
+      static int32_t last_bottom_cmd = 0;
+      static int32_t last_top_cmd = 0;
+
+      if (target_bottom_ticks != last_bottom_cmd)
+      {
+        elmo_bottom_->setPosition(target_bottom_ticks);
+        elmo_bottom_->beginMotion();
+        last_bottom_cmd = target_bottom_ticks;
+      }
+
+      if (target_top_ticks != last_top_cmd)
+      {
+        elmo_top_->setPosition(target_top_ticks);
+        elmo_top_->beginMotion();
+        last_top_cmd = target_top_ticks;
+      }
+
+      RCLCPP_DEBUG(get_logger(),
+                   "Target: %.3f m (%d ticks) | Bottom: %d→%d | Top: %d→%d",
+                   target_m, desired_total_ticks,
+                   current_bottom, target_bottom_ticks,
+                   current_top, target_top_ticks);
+    }
+    else
+    {
+      // Fake hardware: simple lerp
+      double error = command_position_ - state_position_;
+      state_position_ = state_position_ + error / 10.0;
+      state_velocity_ = error / 10.0;
+      state_position_ticks_ = state_position_ * max_ticks_total_ / (max_height_m_ - min_height_m_);
+      state_velocity_ticks_per_sec_ = state_velocity_ * max_ticks_total_ / (max_height_m_ - min_height_m_);
     }
   }
-  catch (const exception& e)
+  catch (const std::exception& e)
   {
     RCLCPP_WARN(get_logger(), "Write error: %s", e.what());
   }
