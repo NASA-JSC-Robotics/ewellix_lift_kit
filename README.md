@@ -1,15 +1,36 @@
 # Ewellix Lift Kit
 
-ROS 2 hardware drivers for the [Ewellix TLT Lift Kit](https://www.ewellix.com/en/products/lifting-columns/tlt).
-The drivers have been built and tested against ROS 2 humble.
+ros2_control hardware drivers for the [Ewellix TLT Lift Kit](https://www.ewellix.com/en/products/lifting-columns/tlt) and [Elmo Gold motor controllers.](https://www.elmomc.com/product/gold-solo-twitter/) 
 
-![alt text](./docs/ewellix_tlt_lift.png "ewellix TLT")
 
+The drivers have been built and tested against ROS 2 Jazzy.
+
+<div align="center">
+  <figure>
+    <img width="400" alt="Ewellix TLT Lift" src="./docs/ewellix_tlt_lift.png">
+  </figure>
+  <figure>
+    <img width="450" alt="Elmo Gold Solo Motor Controller" src="https://github.com/user-attachments/assets/bb71d110-6ed5-438b-bcb6-df6a0746bcdd">
+  </figure>
+</div>
+
+# Overview 
+This project provides a complete ros2_control system for the Ewellix actuator with dual Elmo Gold brushless servo motor controllers. The Elmo Gold controllers have many advantages that make development of a robotic system a lot easier and more precise. This is meant to be an expandable framework that can be adapted to different robotic systems.
+
+This implementation provides:
+- **Elmo Gold C++ API** - Includes Elmo commands for actuator control
+- **Dual-Motor Control** - For use with a two-motor actuator
+- **Actuator Calibration** - Finds the endpoints of the actuator and encoder ranges
+- **ros2_control Integration** - Full `ros2_control` framework support including RViz
+- **Actuator and Controller Telemetry** - Monitoring of motor and controller status
+- **Configurable Motion Profiles** - Tunable acceleration, deceleration, speed, and more
+- **Serial Communication** - RS-232/USB via Elmo TLT protocol 
+  
 ## Build and Configure
 
 To compile, add this repo to a colcon workspace, then install relevant ROS dependencies with `rosdep`.
 
-The drivers communicate using a serial (RS232) connection, the port is configurable though the [com_port](./ewellix_liftkit_description/urdf/ewellix_lift.urdf.xacro) parameter.
+The drivers communicate using a serial (RS232) connection, the port is configurable though the [com_port]() parameter.
 Be sure that the [serial](https://github.com/tylerjw/serial.git) project is available either on the machine or in the same workspace.
 
 Once all dependencies are installed, the drivers can be compiled with `colcon build`.
