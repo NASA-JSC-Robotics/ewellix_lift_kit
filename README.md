@@ -18,7 +18,7 @@ The drivers have been built and tested against ROS 2 Jazzy.
 This project provides a complete ros2_control system for the Ewellix actuator with dual Elmo Gold brushless servo motor controllers. The Elmo Gold controllers have many advantages that make development of a robotic system a lot easier and more precise. This is meant to be an expandable framework that can be adapted to different robotic systems.
 
 This implementation provides:
-- **Elmo Gold C++ API** - Includes Elmo commands for actuator control
+- **Elmo Gold C++ API** - Includes Elmo commands for actuator control, with up to 2× the serial update rate of the previous implementation.
 - **Dual-Motor Control** - For use with a two-motor actuator
 - **Actuator Calibration** - Finds the endpoints of the actuator and encoder ranges
 - **ros2_control Integration** - Full `ros2_control` framework support including RViz
@@ -26,7 +26,12 @@ This implementation provides:
 - **Configurable Motion Profiles** - Tunable acceleration, deceleration, speed, and more
 - **Serial Communication** - RS-232/USB via Elmo TLT protocol 
   
-## Build and Configure
+# Build and Configure
+## Prerequisites 
+To run this, make sure you have ROS2 and ros2_control installed on your system, if not, refer to these resources below to get started.
+
+
+## Compile 
 
 To compile, add this repo to a colcon workspace, then install relevant ROS dependencies with `rosdep`.
 
