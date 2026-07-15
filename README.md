@@ -28,29 +28,43 @@ This implementation provides:
   
 # Build and Configure
 ## Prerequisites 
-To run this, make sure you have ROS2 and ros2_control installed on your system, if not, refer to these resources below to get started.
+- To run this, make sure you have [ROS 2](https://github.com/ros2) and [ros2_control](https://github.com/ros-controls/ros2_control) installed on your system. 
 
+- Your user must have permission to access the serial devices (for example `/dev/ttyACM0` and `/dev/ttyACM1`). On Ubuntu, this typically requires membership in the `dialout` group.
 
+  **Make sure to reboot for these changes to stick.**
+
+```bash
+sudo usermod -aG dialout $USER
+```
+- Clone of this Elmo branch on your system.
 ## Compile 
 
 To compile, add this repo to a colcon workspace, then install relevant ROS dependencies with `rosdep`.
 
-The drivers communicate using a serial (RS232) connection, the port is configurable though the [com_port]() parameter.
-Be sure that the [serial](https://github.com/tylerjw/serial.git) project is available either on the machine or in the same workspace.
+The drivers communicate using a serial (RS232) connection, the port is configurable though the [com_port](https://github.com/NASA-JSC-Robotics/ewellix_lift_kit/blob/elmo/ewellix_liftkit_deploy/config/ewellix_liftkit_parameters.yaml) parameter.
 
 Once all dependencies are installed, the drivers can be compiled with `colcon build`.
 
 ## Run
 
-The deploy packages include launch files for both hardware and a kinematic simulation.
+The deploy packages include launch files for both hardware, kinematic simulation, homing procedures and actuator test files.
+
+**Always home the Ewellix actuator as the Elmo controller does not remember the encoder position after a power loss.**
+
 To launch the drivers:
 
 ```bash
+# Run the homing procedure, the actuator will find min and max endpoints, detailed instructions below
+ros2 run liftkit_hardware_interface elmo_calibration
+
 # Run the kinematic simulation
 ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=true
 
 # Run the hardware drivers
-ros2 launch ewellix_liftkit_deploy liftkit.launch.py
+ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=false
+
+
 ```
 
 We also include a basic MoveIt configuration for testing planning and execution.
@@ -59,65 +73,58 @@ We also include a basic MoveIt configuration for testing planning and execution.
 ros2 launch ewellix_liftkit_moveit_config liftkit_moveit.launch.py
 ```
 
-## A Note on Control
-
-The liftkit motors are controlled solely through velocity commands, but the hardware interface ingests position commands.
-
-The crux of the issue is that there is a minimum speed that can be sent to the motors such that the lift can be moved.
-When you command too low of a speed, the robot will stop and you have to call `stop()` followed by `moveDown()` or `moveUp()` to start movement again.
-This can cause some issues with movement, particularly when executing trajectories with slower velocities.
-In many cases, the commanded final position of a trajectory will not be reached because the commanded motor speed towards the end is insufficient for movement.
-It can also cause "stuttering" in the movement of the lift.
-
-To improve both the tracking and steady state accuracy of the drivers, there are a few control principles that have been added to compensensate for the problems above,
-
-1) A feedforward term to the controller so that we do not follow too far behind the commanded velocity and stop every time we get close.
-2) An integral component so that we pick up the slack if trajectory starts are delayed due to the ramp up velocity commands.
-3) We have separated the actuation of motor 1 and motor 2, which effectively cuts down the minimum speed by half.
-
-## Calibration Procedure
-
+## How To Home Actuator With Elmo Controllers
 The liftkits are not all made exactly the same (apparently).
 There are small discrepancies that can result in a couple of mm of error, which we would like to avoid.
 This calibration procedure allows you to take a couple of observations, and then let the driver do all of the math for you.
 
-First, run the calibration script to make the liftkit go all the way up (replace `com_port` with the com port for your liftkit)!
+The parameters will automatically be saved to [this yaml](https://github.com/NASA-JSC-Robotics/ewellix_lift_kit/blob/elmo/ewellix_liftkit_deploy/config/ewellix_liftkit_parameters.yaml) when the procedure is ran. 
+
+**All that is needed is a tape measure and a Linux machine running this repo with Elmo controllers.**
+
+First, run the calibration command as shown above in the **Run** section. The type of output you should see is:
+```sh
+Loaded from URDF:
+  port_top (first): /dev/ttyACM0
+  port_bottom (second): /dev/ttyACM1
+
+=== Connecting Motors ===
+ACM2: 20210922 = bottomMotor
+ACM3: 20210926 = topMotor
+
+=== Calibrating DOWN ===
+[topMotor] Moving...
+[topMotor] VEL=0 POS=0
+[topMotor] VEL=0 POS=0 ...
+```
+
+When the endpoints are reached, there will be a prompt to input in a height measurement **in meters**, for example here is the bottom:
 
 ```sh
-ros2 launch ewellix_liftkit_deploy liftkit_calibration.launch.py com_port:=/dev/ewellix_left calibration_direction:=up
+=== DOWN Results ===
+Top Motor:    OK - encoder zeroed
+Bottom Motor: OK - encoder zeroed
+
+Enter minimum height in meters: 
 ```
-This will print out something when it gets there that looks like this:
+
+
+Measure from the same relative point (like the base) to the top of the actuator like shown below:
+
+<img width="600" alt="IMG_7623" src="https://github.com/user-attachments/assets/5e563bb3-5e77-44c0-b508-3d79c1326e8c" />
+
+
+Do this for both the top and bottom whn prompted, if measured at the same relative point the formula will work itself out.
+
+When done, this output will appear:
 ```sh
-[ros2_control_node-2] [INFO] [1748892022.647655552] [LiftkitHardwareInterface]: Calibration complete! Direction: up
-[ros2_control_node-2] [INFO] [1748892022.647735345] [LiftkitHardwareInterface]: mot1_min_ticks: 862
-[ros2_control_node-2] [INFO] [1748892022.647748887] [LiftkitHardwareInterface]: mot2_min_ticks: 860
+=== DOWN Results ===
+Top Motor:    OK - encoder zeroed
+Bottom Motor: OK - encoder zeroed
+
+Enter minimum height in meters: 
 ```
 
-Note this, and measure the height of the liftkit. Note that this height should be w.r.t. the nominal height of the liftkit in the URDF when the motors are at their "0" position. For example, if at the 0 position, the urdf has the top of the second stack 50 mm away from the bottom, and you measure that position to be 582.3 mm at the top, you would call this number 0.5323 (meters).
-
-Now do the same thing going down
-
-```sh
-ros2 launch ewellix_liftkit_deploy liftkit_calibration.launch.py com_port:=/dev/ewellix_left calibration_direction:=down
-```
-
-you will get something that looks like this
-```sh
-[ros2_control_node-2] [INFO] [1748892022.647655552] [LiftkitHardwareInterface]: Calibration complete! Direction: down
-[ros2_control_node-2] [INFO] [1748892022.647735345] [LiftkitHardwareInterface]: mot1_min_ticks: 9
-[ros2_control_node-2] [INFO] [1748892022.647748887] [LiftkitHardwareInterface]: mot2_min_ticks: 10
-```
-Take the same measurement as mentioned before. Lets say that number was measured to be 1.6mm off of nominal down position.
-
-Now you can make your calibration file as shown below, and pass that to [your ros2 control tag](ewellix_liftkit_description/urdf/ewellix_lift.urdf.xacro)
-```yaml
-min_ticks_mot_1: 9
-max_ticks_mot_1: 862
-min_ticks_mot_2: 10
-max_ticks_mot_2: 860
-min_height_m: 0.0016
-max_height_m: 0.5323
-```
 ## Citation
 
 This project falls under the purview of the iMETRO project.
