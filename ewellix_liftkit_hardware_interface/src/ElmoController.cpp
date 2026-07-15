@@ -21,12 +21,11 @@
 #include <iostream>
 #include <cstring>
 
-// POSIX / Linux serial headers
-#include <fcntl.h>      // open(), O_RDWR, O_NOCTTY, O_NDELAY
-#include <unistd.h>     // close(), read(), write()
-#include <termios.h>    // struct termios, tcgetattr(), tcsetattr(), cfsetspeed()
+#include <fcntl.h>      
+#include <unistd.h>     
+#include <termios.h>    
 #include <errno.h>
-#include <sys/select.h> // select() for timeout reads
+#include <sys/select.h> 
 
 using namespace std; 
 
