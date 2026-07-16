@@ -61,6 +61,11 @@ To launch the drivers:
 # Run the homing procedure, the actuator will find min and max endpoints, detailed instructions below
 ros2 run liftkit_hardware_interface elmo_calibration
 
+or
+
+cd ~/ewellix_lift_kit
+./install/liftkit_hardware_interface/lib/liftkit_hardware_interface/elmo_calibration
+
 # Run the kinematic simulation
 ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=true
 
@@ -149,14 +154,7 @@ Measure from the same relative point (like the base) to the top of the actuator 
 
 Do this for both the top and bottom whn prompted, if measured at the same relative point the formula will scale properly.
 
-When done, this output will appear:
-```sh
-=== DOWN Results ===
-Top Motor:    OK - encoder zeroed
-Bottom Motor: OK - encoder zeroed
-
-Enter minimum height in meters: 
-```
+When done, a sucessful output should appear and the data will be stored in [this yaml](https://github.com/NASA-JSC-Robotics/ewellix_lift_kit/blob/elmo/ewellix_liftkit_deploy/config/ewellix_liftkit_parameters.yaml)
 
 ## Citation
 
