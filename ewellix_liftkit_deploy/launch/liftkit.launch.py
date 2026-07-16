@@ -239,6 +239,15 @@ def generate_launch_description():
             description="launch rviz",
         )
     )
+    # === ADD SINE WAVE TEST ARGUMENT ===
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "run_sine_wave_test",
+            default_value="false",
+            description="Enable sine wave command publisher for testing",
+        )
+    )
+    # ===================================
 
     robot_name              = LaunchConfiguration("robot_name")
     tf_prefix               = LaunchConfiguration("tf_prefix")
@@ -269,6 +278,9 @@ def generate_launch_description():
     motor_stop_decel        = LaunchConfiguration("motor_stop_decel")
     motor_speed_profile     = LaunchConfiguration("motor_speed_profile")
     # =====================================
+    # === ADD SINE WAVE TEST CONFIGURATION ===
+    run_sine_wave_test      = LaunchConfiguration("run_sine_wave_test")
+    # ========================================
 
     robot_description_content = Command(
         [
@@ -367,7 +379,17 @@ def generate_launch_description():
         condition=IfCondition(rviz),
     )
 
-    nodes = [robot_state_publisher, controller_manager, rviz_node]
+    # === ADD SINE WAVE PUBLISHER NODE ===
+    sine_wave_node = Node(
+        package="ewellix_liftkit_deploy",
+        executable="sine_wave_publisher",
+        name="sine_wave_command_publisher",
+        output="screen",
+        condition=IfCondition(run_sine_wave_test),
+    )
+    # ====================================
+
+    nodes = [robot_state_publisher, controller_manager, rviz_node, sine_wave_node]
 
     spawn_controllers_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(

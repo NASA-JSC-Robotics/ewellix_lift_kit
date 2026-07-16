@@ -10,7 +10,7 @@ import time
 class SineWaveCommandPublisher(Node):
     def __init__(self):
         super().__init__('sine_wave_command_publisher')
-        
+
         # Publisher for position commands
         self.cmd_publisher = self.create_publisher(
             Float64MultiArray,
@@ -32,11 +32,11 @@ class SineWaveCommandPublisher(Node):
         # Sine wave parameters
         self.center = 0.300      # Center position (meters)
         self.amplitude = 0.150   # Amplitude above/below center (meters)
-        self.period = 40.0        # Full cycle time (seconds)
+        self.period = 40.0       # Full cycle time (seconds)
         self.start_time = time.time()
         
         # Initialization phase
-        self.init_duration = 10.0  # Hold at center for 5 seconds
+        self.init_duration = 10.0  # Hold at center for 10 seconds
         self.init_complete = False
         self.sine_start_time = None
         
@@ -47,12 +47,12 @@ class SineWaveCommandPublisher(Node):
         self.get_logger().info('Sine Wave Publisher Started')
         self.get_logger().info(f'  Phase 1: Hold at center ({self.center}m) for {self.init_duration}s')
         self.get_logger().info(f'  Phase 2: Sine wave - Center: {self.center}m, Amplitude: {self.amplitude}m, Period: {self.period}s')
-    
+
     def publish_command(self):
         """Publish position command based on current phase"""
         elapsed = time.time() - self.start_time
         
-        # Phase 1: Initialize at center position for 5 seconds
+        # Phase 1: Initialize at center position for 10 seconds
         if not self.init_complete:
             if elapsed < self.init_duration:
                 position = self.center
@@ -92,7 +92,7 @@ class SineWaveCommandPublisher(Node):
             f'[{phase_info}] t={elapsed:6.2f}s | Cmd: {position:.4f}m | Actual: {self.latest_position:.4f}m | '
             f'Error: {error:+.4f}m | Vel: {self.latest_velocity:.4f}m/s'
         )
-    
+
     def joint_state_callback(self, msg):
         """Store latest joint state feedback"""
         if len(msg.position) > 0:
@@ -103,7 +103,7 @@ class SineWaveCommandPublisher(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = SineWaveCommandPublisher()
-    
+
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

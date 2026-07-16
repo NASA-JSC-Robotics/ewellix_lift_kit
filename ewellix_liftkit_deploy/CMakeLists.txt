@@ -17,9 +17,20 @@ install(
 )
 
 # Install Python scripts
-install(PROGRAMS scripts/test_publisher.py
+install(PROGRAMS 
+  scripts/test_publisher.py
+  scripts/sine_wave_test.py
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Create symbolic link for sine_wave_publisher executable name
+install(CODE "
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E create_symlink
+    sine_wave_command_publisher.py
+    \${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/sine_wave_publisher
+  )
+")
 
 # Export dependencies so they're available to packages that depend on this one
 ament_export_dependencies(ament_cmake_python rclpy)
