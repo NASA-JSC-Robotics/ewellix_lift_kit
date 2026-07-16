@@ -147,7 +147,7 @@ Measure from the same relative point (like the base) to the top of the actuator 
 <img width="600" alt="IMG_7623" src="https://github.com/user-attachments/assets/5e563bb3-5e77-44c0-b508-3d79c1326e8c" />
 
 
-Do this for both the top and bottom whn prompted, if measured at the same relative point the formula will work itself out.
+Do this for both the top and bottom whn prompted, if measured at the same relative point the formula will scale properly.
 
 When done, this output will appear:
 ```sh
