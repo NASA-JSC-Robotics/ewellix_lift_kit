@@ -89,7 +89,7 @@ To manually move the lift to a certain height, you can use ROS2 commands like th
 ros2 topic pub /lift_position_controller/commands std_msgs/msg/Float64MultiArray "data: [0.4]"
 ```
 
-**The 0.4 input can be changes to any height requested**
+**The 0.4 input can be changed to any height requested**
 
 
 ### Sine Wave Test
@@ -160,7 +160,7 @@ Measure from the same relative point (like the base) to the top of the actuator 
 <img width="600" alt="IMG_7623" src="https://github.com/user-attachments/assets/5e563bb3-5e77-44c0-b508-3d79c1326e8c" />
 
 
-Do this for both the top and bottom whn prompted, if measured at the same relative point the formula will scale properly.
+Do this for both the top and bottom when prompted, if measured at the same relative point the formula will scale properly.
 
 When done, a sucessful output should appear and the data will be stored in [this yaml](https://github.com/NASA-JSC-Robotics/ewellix_lift_kit/blob/elmo/ewellix_liftkit_deploy/config/ewellix_liftkit_parameters.yaml)
 
