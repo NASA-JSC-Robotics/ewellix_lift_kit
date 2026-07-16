@@ -83,6 +83,14 @@ ros2 launch ewellix_liftkit_moveit_config liftkit_moveit.launch.py
 
 ## Testing Movement
 ### Manual Movement Commands
+To manually move the lift to a certain height, you can use ROS2 commands like this:
+
+```bash
+ros2 topic pub /lift_position_controller/commands std_msgs/msg/Float64MultiArray "data: [0.4]"
+```
+
+**The 0.4 input can be changes to any height requested**
+
 
 ### Sine Wave Test
 We have included a sine wave input file to test the system's response to continuous motion commands. This can be run either manually or through ROS2 run as shown below:
