@@ -55,6 +55,9 @@ The deploy packages include launch files for both hardware, kinematic simulation
 To launch the drivers:
 
 ```bash
+# Source the workspace or add to your bashrc
+~/ewellix_lift_kit/install/setup.bash
+
 # Run the homing procedure, the actuator will find min and max endpoints, detailed instructions below
 ros2 run liftkit_hardware_interface elmo_calibration
 
@@ -72,6 +75,36 @@ We also include a basic MoveIt configuration for testing planning and execution.
 ```bash
 ros2 launch ewellix_liftkit_moveit_config liftkit_moveit.launch.py
 ```
+
+## Testing Movement
+### Manual Movement Commands
+
+### Sine Wave Test
+We have included a sine wave input file to test the system's response to continuous motion commands. This can be run either manually or through ROS2 run as shown below:
+
+```bash
+# ROS2 run
+ros2 run ewellix_liftkit_deploy sine_wave_test.py
+
+# Python 3 if preferred
+cd ~/ewellix_lift_kit/ewellix_liftkit_deploy/scripts
+
+python3 sine_wave_test.py
+```
+
+The initial position is called for a short period to give time for the actuator to get to the initial location. You should see an output similar to this:
+
+```bash
+[INFO] [1784216765.527447886] [sine_wave_command_publisher]: Sine Wave Publisher Started
+[INFO] [1784216765.527886482] [sine_wave_command_publisher]:   Phase 1: Hold at center (0.3m) for 10.0s
+[INFO] [1784216765.528300202] [sine_wave_command_publisher]:   Phase 2: Sine wave - Center: 0.3m, Amplitude: 0.15m, Period: 40.0s
+[INFO] [1784216765.532496222] [sine_wave_command_publisher]: [INIT] t=  0.02s | Cmd: 0.3000m | Actual: 0.0000m | Error: +0.3000m | Vel: 0.0000m/s
+[INFO] [1784216765.554688388] [sine_wave_command_publisher]: [INIT] t=  0.04s | Cmd: 0.3000m | Actual: 0.0000m | Error: +0.3000m | Vel: 0.0000m/s
+[INFO] [1784216765.576863294] [sine_wave_command_publisher]: [INIT] t=  0.07s | Cmd: 0.3000m | Actual: 0.0000m | Error: +0.3000m | Vel: 0.0000m/s
+[INFO] [1784216765.599160171] [sine_wave_command_publisher]: [INIT] t=  0.09s | Cmd: 0.3000m | Actual: 0.0000m | Error: +0.3000m | Vel: 0.0000m/s
+```
+
+The sine wave test can be paired visually with a ROS2 plotting program like PlotJuggler that allows you to visually observe commands vs actual movement.
 
 ## How To Home Actuator With Elmo Controllers
 The liftkits are not all made exactly the same (apparently).
