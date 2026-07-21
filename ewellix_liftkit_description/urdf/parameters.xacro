@@ -11,7 +11,7 @@
   <xacro:arg name="parent" default="world" />
   
   <!-- Motor parameters -->
-  <xacro:arg name="max_ticks_mot_1" default="870" />
+  <xacro:arg name="max_ticks_mot_1" default="872" />
   <xacro:arg name="max_ticks_mot_2" default="868" />
   <xacro:arg name="min_ticks_mot_1" default="0" />
   <xacro:arg name="min_ticks_mot_2" default="0" />

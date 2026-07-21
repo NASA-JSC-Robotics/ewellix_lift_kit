@@ -1,6 +1,6 @@
 ewellix_liftkit:
   # Motor parameters
-  max_ticks_mot_1: 870
+  max_ticks_mot_1: 872
   max_ticks_mot_2: 868
   min_ticks_mot_1: 0
   min_ticks_mot_2: 0

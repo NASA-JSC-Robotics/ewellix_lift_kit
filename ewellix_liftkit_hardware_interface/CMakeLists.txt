@@ -6,6 +6,7 @@ find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 # --- ElmoController library ---
 add_library(ElmoController SHARED
@@ -47,16 +48,17 @@ target_link_libraries(elmo_calibration
   pthread
 )
 
-# --- Test executable ---
-add_executable(liftkit_test
+# --- Sine Wave Tester executable (standalone, no ROS 2) ---
+add_executable(sine_wave_tester
   test/main.cpp
 )
-target_include_directories(liftkit_test PUBLIC
+target_include_directories(sine_wave_tester PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-target_link_libraries(liftkit_test
+target_link_libraries(sine_wave_tester
   ElmoController
+  yaml-cpp
   pthread
 )
 
@@ -69,7 +71,7 @@ set_target_properties(elmo_calibration PROPERTIES
   INSTALL_RPATH "$ORIGIN"
   BUILD_WITH_INSTALL_RPATH TRUE
 )
-set_target_properties(liftkit_test PROPERTIES
+set_target_properties(sine_wave_tester PROPERTIES
   INSTALL_RPATH "$ORIGIN"
   BUILD_WITH_INSTALL_RPATH TRUE
 )
@@ -79,7 +81,7 @@ install(TARGETS
   ElmoController
   elmo_liftkit_hardware_interface
   elmo_calibration
-  liftkit_test
+  sine_wave_tester
   DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -100,5 +102,5 @@ pluginlib_export_plugin_description_file(
 
 ament_export_include_directories(include)
 ament_export_libraries(ElmoController elmo_liftkit_hardware_interface)
-ament_export_dependencies(hardware_interface pluginlib rclcpp rclcpp_lifecycle)
+ament_export_dependencies(hardware_interface pluginlib rclcpp rclcpp_lifecycle yaml-cpp)
 ament_package()
