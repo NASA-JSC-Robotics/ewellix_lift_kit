@@ -10,9 +10,8 @@
 
 using namespace std;
 
-// ---------------------------------------------------------------------------
+
 // Homing configuration
-// ---------------------------------------------------------------------------
 constexpr float   HOMING_CURRENT_A       = 0.5f;   // amps, well under CL[1]
 constexpr int32_t STALL_VELOCITY_THRESH  = 5;       // counts/sec
 constexpr int     STALL_TIME_MS          = 400;     // dwell before declaring hard stop
