@@ -161,6 +161,17 @@ The initial position is called for a short period to give time for the actuator 
 The sine wave test can be paired visually with a ROS2 plotting program like PlotJuggler that allows you to visually observe commands vs actual movement.
 
 ## Sine Wave Test Without ROS2
+We have also included a non-ROS2 version of the sine wave input file to test the system's response to continuous motion commands. This can be ran as shown below:
+
+```bash
+cd ~/ewellix_lift_kit
+
+./install/liftkit_hardware_interface/lib/liftkit_hardware_interface/sine_wave_tester
+```
+
+Once the test file gets past the initialization stage, a Gnuplot GUI will open and show you commanded position vs actual position for tuning.
+
+<img width="648" height="583" alt="image" src="https://github.com/user-attachments/assets/9522f518-81c7-41e1-b153-fe8b6b216bf6" />
 
 # How To Home Actuator With Elmo Controllers
 The liftkits are not all made exactly the same (apparently).
