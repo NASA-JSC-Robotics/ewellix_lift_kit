@@ -46,7 +46,7 @@ The drivers communicate using a serial (RS232) connection, the port is configura
 
 Once all dependencies are installed, the drivers can be compiled with `colcon build`.
 
-## Run
+# Run
 
 The deploy packages include launch files for both hardware, kinematic simulation, homing procedures and actuator test files.
 
@@ -56,7 +56,13 @@ To launch the drivers:
 
 ```bash
 # Source the workspace or add to your bashrc
-~/ewellix_lift_kit/install/setup.bash
+source ~/ewellix_lift_kit/install/setup.bash
+
+# Run the kinematic simulation
+ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=true
+
+# Run the hardware drivers
+ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=false
 
 # Run the homing procedure, the actuator will find min and max endpoints, detailed instructions below
 ros2 run liftkit_hardware_interface elmo_calibration
@@ -66,13 +72,6 @@ or
 cd ~/ewellix_lift_kit
 ./install/liftkit_hardware_interface/lib/liftkit_hardware_interface/elmo_calibration
 
-# Run the kinematic simulation
-ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=true
-
-# Run the hardware drivers
-ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=false
-
-
 ```
 
 We also include a basic MoveIt configuration for testing planning and execution.
@@ -81,9 +80,9 @@ We also include a basic MoveIt configuration for testing planning and execution.
 ros2 launch ewellix_liftkit_moveit_config liftkit_moveit.launch.py
 ```
 
-## Testing Movement
-### Manual Movement Commands
-To manually move the lift to a certain height, you can use ROS2 commands like this:
+# Testing Movement
+## Manual Movement Commands With ROS2
+To manually move the lift to a certain height, you can use ROS2 commands directly through the command line like this:
 
 ```bash
 ros2 topic pub /lift_position_controller/commands std_msgs/msg/Float64MultiArray "data: [0.4]"
@@ -91,8 +90,50 @@ ros2 topic pub /lift_position_controller/commands std_msgs/msg/Float64MultiArray
 
 **The 0.4 input can be changed to any height requested**
 
+## Manual Movement Without ROS2
+Since the Elmo motor controller library is abstracted, this allows you to write custom programs outside of ROS2 to control the Ewellix Liftkit. Example usage is shown below to control a single motor called elmoTop, but the same can be applied to multiple motors by instantiating the object:
 
-### Sine Wave Test
+```c++
+// Step 1
+elmoTop.connect(); // Will attempt to connect to motor controller currently connected via USB.
+
+// Step 2
+// Three different control modes can be set depending on your use case.     
+elmoTop.setVelocityMode();
+or
+elmoTop.setPositionMode();
+or
+elmoTop.setCurrentMode();
+
+// Step 3
+// These motor parameters need to be set to use the motor controller, the number values can be changed as needed for the program. 
+elmoTop.sendRawCommand("AC=100"); // Acceleration
+elmoTop.sendRawCommand("DC=100"); // Deceleration
+elmoTop.sendRawCommand("SD=100"); // Stop Deceleration (For emergency stops)
+elmoTop.sendRawCommand("SP=100"); // Max Speed
+
+// Step 4
+// Now the motor can be armed and turned on, don't worry as the motor won't move without movement commands.
+elmoTop.motorOn();
+
+// Step 5
+// Now the motor can be moved with movement commands and pinged for telemetry data. Shown below is movement with position mode:
+elmoTop.setPositionRelative(400); // Moves relative to current position
+or
+elmoTop.setPosition(400); // Moves relative to home position
+
+elmoTop.getPosition(); // Current motor position
+elmoTop.getVelocity(); // Current motor velocity
+elmoTop.getCurrent();  // Current draw
+
+// Step 6
+// After movement is completed, the Elmo controller can be turned off and disconnected.
+elmoTop.stopMotion(); // Stops current motor motion, even in the middle of travel.
+elmoTop.motorOff();   // Disarms motor.
+elmoTop.disconnect(); // Disconnects serial connection
+```
+
+## Sine Wave Test With ROS2
 We have included a sine wave input file to test the system's response to continuous motion commands. This can be run either manually or through ROS2 run as shown below:
 
 ```bash
@@ -119,7 +160,9 @@ The initial position is called for a short period to give time for the actuator 
 
 The sine wave test can be paired visually with a ROS2 plotting program like PlotJuggler that allows you to visually observe commands vs actual movement.
 
-## How To Home Actuator With Elmo Controllers
+## Sine Wave Test Without ROS2
+
+# How To Home Actuator With Elmo Controllers
 The liftkits are not all made exactly the same (apparently).
 There are small discrepancies that can result in a couple of mm of error, which we would like to avoid.
 This calibration procedure allows you to take a couple of observations, and then let the driver do all of the math for you.
