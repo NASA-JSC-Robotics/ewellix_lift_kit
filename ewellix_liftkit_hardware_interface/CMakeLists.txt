@@ -50,7 +50,7 @@ target_link_libraries(elmo_calibration
 
 # --- Sine Wave Tester executable (standalone, no ROS 2) ---
 add_executable(sine_wave_tester
-  test/main.cpp
+  test/sine_nonROS.cpp
 )
 target_include_directories(sine_wave_tester PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

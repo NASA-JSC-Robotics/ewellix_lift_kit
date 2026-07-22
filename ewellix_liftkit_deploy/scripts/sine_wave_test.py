@@ -7,14 +7,6 @@ from sensor_msgs.msg import JointState
 import math
 import time
 
-# === TEST CONFIGURATION ===
-CENTER = 0.35                  # Center position (meters)
-AMPLITUDE = 0.150             # Amplitude above/below center (meters)
-PERIOD_SECONDS = 40.0         # Full cycle time (seconds)
-INIT_DURATION_SECONDS = 10.0  # Initialization time (seconds)
-TEST_CYCLES = 3.0             # Number of sine wave cycles to run
-# ==========================
-
 class SineWaveCommandPublisher(Node):
     def __init__(self):
         super().__init__('sine_wave_command_publisher')
@@ -38,14 +30,13 @@ class SineWaveCommandPublisher(Node):
         self.timer = self.create_timer(1/45, self.publish_command)
         
         # Sine wave parameters
-        self.center = CENTER
-        self.amplitude = AMPLITUDE
-        self.period = PERIOD_SECONDS
-        self.init_duration = INIT_DURATION_SECONDS
-        self.test_cycles = TEST_CYCLES
+        self.center = 0.35      # Center position (meters)
+        self.amplitude = 0.150   # Amplitude above/below center (meters)
+        self.period = 40.0       # Full cycle time (seconds)
         self.start_time = time.time()
         
         # Initialization phase
+        self.init_duration = 10.0  # Hold at center for 10 seconds
         self.init_complete = False
         self.sine_start_time = None
         
@@ -53,22 +44,7 @@ class SineWaveCommandPublisher(Node):
         self.latest_position = 0.0
         self.latest_velocity = 0.0
         
-        # Error tracking
-        self.error_history = []
-        self.test_complete = False
-        
-        # Calculate total duration
-        total_duration = self.init_duration + (self.test_cycles * self.period)
-        
         self.get_logger().info('Sine Wave Publisher Started')
-        self.get_logger().info(f'Test Configuration:')
-        self.get_logger().info(f'  Center: {self.center:.3f}m')
-        self.get_logger().info(f'  Amplitude: {self.amplitude:.3f}m')
-        self.get_logger().info(f'  Period: {self.period:.1f}s')
-        self.get_logger().info(f'  Initialization Time: {self.init_duration:.1f}s')
-        self.get_logger().info(f'  Test Cycles: {self.test_cycles:.1f}')
-        self.get_logger().info(f'  Total Duration: {total_duration:.1f}s')
-        self.get_logger().info(f'')
         self.get_logger().info(f'  Phase 1: Hold at center ({self.center}m) for {self.init_duration}s')
         self.get_logger().info(f'  Phase 2: Sine wave - Center: {self.center}m, Amplitude: {self.amplitude}m, Period: {self.period}s')
 
@@ -76,17 +52,7 @@ class SineWaveCommandPublisher(Node):
         """Publish position command based on current phase"""
         elapsed = time.time() - self.start_time
         
-        # Check if test duration is complete FIRST
-        test_end_time = self.init_duration + (self.test_cycles * self.period)
-        if elapsed > test_end_time and not self.test_complete:
-            self.test_complete = True
-            self.print_performance_summary()
-            # Stop the timer and shutdown
-            self.timer.cancel()
-            rclpy.shutdown()
-            return
-        
-        # Phase 1: Initialize at center position
+        # Phase 1: Initialize at center position for 10 seconds
         if not self.init_complete:
             if elapsed < self.init_duration:
                 position = self.center
@@ -96,7 +62,6 @@ class SineWaveCommandPublisher(Node):
                 self.init_complete = True
                 self.sine_start_time = time.time()
                 self.get_logger().info(f'✓ Initialization complete. Starting sine wave motion.')
-                self.get_logger().info(f'')
                 position = self.center
                 phase_info = "INIT→SINE"
         
@@ -127,10 +92,6 @@ class SineWaveCommandPublisher(Node):
             f'[{phase_info}] t={elapsed:6.2f}s | Cmd: {position:.4f}m | Actual: {self.latest_position:.4f}m | '
             f'Error: {error:+.4f}m | Vel: {self.latest_velocity:.4f}m/s'
         )
-        
-        # Track error during sine phase only
-        if self.init_complete:
-            self.error_history.append(abs(error))
 
     def joint_state_callback(self, msg):
         """Store latest joint state feedback"""
@@ -138,41 +99,6 @@ class SineWaveCommandPublisher(Node):
             self.latest_position = msg.position[0]
         if len(msg.velocity) > 0:
             self.latest_velocity = msg.velocity[0]
-    
-    def print_performance_summary(self):
-        """Print performance summary statistics"""
-        if not self.error_history:
-            self.get_logger().warning('No error data collected')
-            return
-        
-        # Calculate statistics
-        avg_error = sum(self.error_history) / len(self.error_history)
-        max_error = max(self.error_history)
-        min_error = min(self.error_history)
-        
-        # Calculate standard deviation
-        mean = avg_error
-        variance = sum((e - mean) ** 2 for e in self.error_history) / len(self.error_history)
-        std_dev = math.sqrt(variance)
-        
-        # Print summary
-        print("\n" + "="*70)
-        print("  PERFORMANCE SUMMARY")
-        print("="*70)
-        print(f"\nTest Parameters:")
-        print(f"  Center: {self.center:.3f}m")
-        print(f"  Amplitude: {self.amplitude:.3f}m")
-        print(f"  Period: {self.period:.1f}s")
-        print(f"  Initialization Time: {self.init_duration:.1f}s")
-        print(f"  Test Cycles: {self.test_cycles:.1f}")
-        print(f"  Total Duration: {self.init_duration + (self.test_cycles * self.period):.1f}s")
-        print(f"\nTracking Performance:")
-        print(f"  Average Error:        {avg_error:.6f}m ({avg_error*1000:.2f}mm)")
-        print(f"  Maximum Error:        {max_error:.6f}m ({max_error*1000:.2f}mm)")
-        print(f"  Minimum Error:        {min_error:.6f}m ({min_error*1000:.2f}mm)")
-        print(f"  Standard Deviation:   {std_dev:.6f}m ({std_dev*1000:.2f}mm)")
-        print(f"  Data Points Collected: {len(self.error_history)}")
-        print("\n" + "="*70 + "\n")
 
 def main(args=None):
     rclpy.init(args=args)
