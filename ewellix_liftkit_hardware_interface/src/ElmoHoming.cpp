@@ -9,6 +9,9 @@
 
 using namespace std;
 
+/**
+ * For the Ewellix setup in the iMETRO lab, internal serial numbers for the Elmo controllers.
+ */
 const map<string, string> ElmoMap = {
     {"20210922", "bottomMotor"},
     {"20210926", "topMotor"}
@@ -18,6 +21,9 @@ void printHeader(const string& title) {
     cout << "\n=== " << title << " ===" << endl;
 }
 
+/**
+ * Gets serial number for each controller, and automatically adjusts port mapping between top and bottom.
+ */
 pair<ElmoController&, ElmoController&> assignPorts(ElmoController& ctrlA, ElmoController& ctrlB) {
     ctrlA.connect();
     ctrlB.connect();
@@ -42,6 +48,9 @@ pair<ElmoController&, ElmoController&> assignPorts(ElmoController& ctrlA, ElmoCo
     return (ElmoMap.at(snA) == "topMotor") ? make_pair(ref(ctrlA), ref(ctrlB)) : make_pair(ref(ctrlB), ref(ctrlA));
 }
 
+/**
+ * Grabs serial port numbers from parameters.xacro <- ewellix_liftkit_parameters.yaml
+ */
 pair<string, string> loadPortsFromURDF(const string& urdf_file) {
     ifstream file(urdf_file);
     if (!file.is_open()) {
@@ -77,6 +86,9 @@ pair<string, string> loadPortsFromURDF(const string& urdf_file) {
     return {port_top, port_bottom};
 }
 
+/**
+ * Uses velocity mode to slowly find mechanical stop of Liftkit
+ */
 void crawlUntilStop(ElmoController& controller, const string& label,
                     int32_t speed, bool& success, int32_t& final_ticks) {
     try {
@@ -150,7 +162,6 @@ void crawlUntilStop(ElmoController& controller, const string& label,
 
 int main(int argc, char** argv) {
     try {
-        // Get HOME directory for portable paths
         const char* home = getenv("HOME");
         if (home == nullptr) {
             throw runtime_error("Could not determine HOME directory");
@@ -169,7 +180,7 @@ int main(int argc, char** argv) {
         printHeader("Connecting Motors");
         auto [elmoTop, elmoBot] = assignPorts(ctrlA, ctrlB);
 
-        // ===== CALIBRATE DOWN =====
+        // Calibrate Down
         printHeader("Calibrating DOWN");
         bool topSuccess_down = false, botSuccess_down = false;
         int32_t topTicks_down = 0, botTicks_down = 0;
@@ -189,7 +200,7 @@ int main(int argc, char** argv) {
         double min_height_m;
         cin >> min_height_m;
         
-        // ===== CALIBRATE UP =====
+        // Calibrate Up
         printHeader("Calibrating UP");
         bool topSuccess_up = false, botSuccess_up = false;
         int32_t topTicks_up = 0, botTicks_up = 0;
@@ -210,8 +221,6 @@ int main(int argc, char** argv) {
         cin >> max_height_m;
 
         printHeader("Saving Calibration");
-        
-        // ===== UPDATE BOTH FILES ONCE =====
         
         // Update parameters YAML file
         ifstream params_in(params_path);
