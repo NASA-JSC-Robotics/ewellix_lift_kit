@@ -166,8 +166,6 @@ string ElmoController::sendCommandAndRead(const string& cmd, int timeout_ms) {
     if (written < 0) {
         throw runtime_error(string("write() failed: ") + strerror(errno));
     }
-
-    // REMOVED: this_thread::sleep_for(chrono::microseconds(100));
     
     string response;
     auto start = chrono::steady_clock::now();
