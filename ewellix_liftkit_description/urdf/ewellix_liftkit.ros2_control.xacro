@@ -32,6 +32,7 @@
           <command_interface name="position"/>
           <state_interface name="position"/>
           <state_interface name="velocity"/>
+          <state_interface name="effort"/>
           <state_interface name="robot_ready"/>
         </joint>
       </ros2_control>
@@ -51,6 +52,7 @@
             <param name="initial_value">${initial_value}</param>
           </state_interface>
           <state_interface name="velocity"/>
+          <state_interface name="effort"/>
           <state_interface name="robot_ready"/>
         </joint>
       </ros2_control>

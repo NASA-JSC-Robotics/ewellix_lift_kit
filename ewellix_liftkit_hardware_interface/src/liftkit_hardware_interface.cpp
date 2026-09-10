@@ -46,6 +46,7 @@ CallbackReturn LiftkitHardwareInterface::on_init(const hardware_interface::Hardw
 
   hw_states_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
   hw_states_velocities_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
+  hw_states_efforts_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
   hw_states_robot_ready_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
 
   hw_commands_positions_.resize(info_.joints.size(), numeric_limits<double>::quiet_NaN());
@@ -113,7 +114,9 @@ vector<hardware_interface::StateInterface> LiftkitHardwareInterface::export_stat
     state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, info_.joints[i].state_interfaces[1].name, &hw_states_velocities_[i]));
     state_interfaces.emplace_back(hardware_interface::StateInterface(
-        info_.joints[i].name, info_.joints[i].state_interfaces[2].name, &hw_states_robot_ready_[i]));
+        info_.joints[i].name, info_.joints[i].state_interfaces[2].name, &hw_states_efforts_[i]));
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
+        info_.joints[i].name, info_.joints[i].state_interfaces[3].name, &hw_states_robot_ready_[i]));
   }
 
   return state_interfaces;
