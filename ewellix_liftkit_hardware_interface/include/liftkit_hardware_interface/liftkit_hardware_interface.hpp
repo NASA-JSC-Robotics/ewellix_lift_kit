@@ -70,6 +70,7 @@ protected:
   // void signal_callback_handler(int signum);
   std::vector<double> hw_states_positions_;
   std::vector<double> hw_states_velocities_;
+  std::vector<double> hw_states_efforts_;
   std::vector<double> hw_states_robot_ready_;
 
   std::vector<double> hw_commands_positions_;
