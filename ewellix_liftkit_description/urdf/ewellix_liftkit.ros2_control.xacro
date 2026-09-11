@@ -32,6 +32,7 @@
           <command_interface name="position"/>
           <state_interface name="position"/>
           <state_interface name="velocity"/>
+          <!-- Note that the effort interface just reports NaN, but is required for some controllers to be happy -->
           <state_interface name="effort"/>
           <state_interface name="robot_ready"/>
         </joint>
