@@ -27,12 +27,6 @@ ros2 launch ewellix_liftkit_deploy liftkit.launch.py use_fake_hardware:=true
 ros2 launch ewellix_liftkit_deploy liftkit.launch.py
 ```
 
-We also include a basic MoveIt configuration for testing planning and execution.
-
-```bash
-ros2 launch ewellix_liftkit_moveit_config liftkit_moveit.launch.py
-```
-
 ## A Note on Control
 
 The liftkit motors are controlled solely through velocity commands, but the hardware interface ingests position commands.
